@@ -1,4 +1,7 @@
 .idea
+.venv
+node_modules
+test.js
 
 # Logs
 logs
