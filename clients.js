@@ -9,9 +9,8 @@ AWS.config.update({
     }
 });
 const sqs = new AWS.SQS({apiVersion: '2012-11-05'});
-const ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
-const ddbDocumentClient = new AWS.DynamoDB.DocumentClient({apiVersion: "2012-08-10"})
+const ddbDocClient = new AWS.DynamoDB.DocumentClient({apiVersion: "2012-08-10"})
 const cache = createClient({url: process.env.REDIS_ENDPOINT});
 const QueueUrl = process.env.QUEUE_URL;
 
-module.exports = {sqs, ddb, ddbDocClient: ddbDocumentClient, cache, QueueUrl}
+module.exports = {sqs, ddbDocClient, cache, QueueUrl}

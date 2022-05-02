@@ -1,7 +1,6 @@
-const {ddb, cache, sqs} = require('./clients');
+const {cache} = require('./clients');
 const {randomUUID} = require('crypto');
 const constants = require('./constants');
-
 const {
     generateOtp,
     generateUniqueId,
@@ -78,28 +77,29 @@ const handleFindDeposit = async (who, howMuch, where) => {
     }
     //todo: check cache before scanning db
 
-    await ddb.scan(params).promise().then(async (res) => {
-        if (res['Items'].length > 0) {
-            console.log(`search results: ${JSON.stringify(res['Items'])}`)
-            // cache result
-            const key = `deposit:${howMuch}:${where}`;
-            await cache.set(key, JSON.stringify(res.Items)).then(_ => {console.log(`cache set ${key}`)});
-            // send sms response to requester
-            sendSms(res['Item'].phone, `${res['Item'].name} ${res['Item'].phone}`)
-            // save the request
-            await writeToDb(constants.requestTable, {
-                'phone': {'S': who},
-                'requestType': {'S': constants.requestType.findDeposit},
-                'where': {'S': where},
-                'money': {'N': howMuch},
-                'otherAccount': {'S': ''},
-                'status': {'S': 'requested'},
-                'extraInfo': {'S': ''},
-                'currentActive': {'BOOL': true},
-                'createdAt': {'N': Date.now()}
-            })
-        }
-    });
+    // todo: migrate to  and to dal
+    // await ddb.scan(params).promise().then(async (res) => {
+    //     if (res['Items'].length > 0) {
+    //         console.log(`search results: ${JSON.stringify(res['Items'])}`)
+    //         // cache result
+    //         const key = `deposit:${howMuch}:${where}`;
+    //         await cache.set(key, JSON.stringify(res.Items)).then(_ => {console.log(`cache set ${key}`)});
+    //         // send sms response to requester
+    //         sendSms(res['Item'].phone, `${res['Item'].name} ${res['Item'].phone}`)
+    //         // save the request
+    //         await writeToDb(constants.requestTable, {
+    //             'phone': {'S': who},
+    //             'requestType': {'S': constants.requestType.findDeposit},
+    //             'where': {'S': where},
+    //             'money': {'N': howMuch},
+    //             'otherAccount': {'S': ''},
+    //             'status': {'S': 'requested'},
+    //             'extraInfo': {'S': ''},
+    //             'currentActive': {'BOOL': true},
+    //             'createdAt': {'N': Date.now()}
+    //         })
+    //     }
+    // });
 }
 
 const handleDeposit = async (firstParty, howMuch, secondParty) => {
