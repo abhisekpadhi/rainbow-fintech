@@ -11,7 +11,8 @@ An offline & mobile first neo-bank for underserved population.
     - Broker: SQS
 - SMS:
   - Receiving: [textlocal](https://textlocal.in) - +919220592205
-  - Sending: [twilio](https://twilio.com) - 
+  - Sending: [twilio](https://twilio.com) | [gupshup](https://enterprise.smsgupshup.com)
+  - 
 
 ## Db schema
 - table: `userAccountIdMapping` 
