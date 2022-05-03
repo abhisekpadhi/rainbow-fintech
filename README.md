@@ -174,7 +174,7 @@ cd aws-sdk-layer/nodejs
 
 2. Use amazon linux 2 compatible environment to install required packages:
 ```shell
-docker run --entrypoint "" -v "$PWD":/var/task "public.ecr.aws/lambda/nodejs:14" /bin/sh -c "npm install aws-sdk redis; exit"
+docker run --entrypoint "" -v "$PWD":/var/task "public.ecr.aws/lambda/nodejs:14" /bin/sh -c "npm install aws-sdk redis node-fetch twilio; exit"
 ```
 
 3. zip it
@@ -191,3 +191,31 @@ Runtimes: Node.js 14.x
 
 5. Use the layer in lambda function. 
 This prevents bundling `node_modules` with zip that is deployed to lambda. Reduces the lambda zip package size and prevents version conflicts with lambda preinstalled packages.  
+
+---
+**Note:** If `elasticache` is in private subnet 
+- Lambda function needs to be inside vpc and must be associated with privates subnets same as `elasticache`
+- AWS VPC endpoints needs to be setup for - `SQS` & `DynamoDB`, since requests for these services travels through internet
+- Environment variables (Key: Value), needs to be set for lambda functions:
+```shell
+ACCESS_KEY_ID:	---
+QUEUE_URL:	https://---.fifo
+REDIS_ENDPOINT:	redis://---.aps1.cache.amazonaws.com:6379
+REGION:	ap-south-1
+SECRET_ACCESS_KEY:	---
+```
+- Modify config: timeout to 30seconds at least, Memory to 256mb
+- Add follwing policies to the role (not ideal setup, just a shotgun approach):
+```shell
+AWSLambdaBasicExecutionRole-64...ef	(already exist, add the remaining 👇)	
+AmazonSQSFullAccess	
+AmazonElastiCacheFullAccess	
+AmazonDynamoDBFullAccess	
+AWSLambdaDynamoDBExecutionRole	
+AdministratorAccess	
+AWSLambdaSQSQueueExecutionRole	
+AWSLambdaInvocation-DynamoDB	
+AWSLambdaVPCAccessExecutionRole
+```
+---
+
