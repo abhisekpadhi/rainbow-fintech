@@ -12,10 +12,10 @@ An offline & mobile first neo-bank for underserved population.
 - SMS:
   - Receiving: [textlocal](https://textlocal.in) - +919220592205
   - Sending: [twilio](https://twilio.com) | [gupshup](https://enterprise.smsgupshup.com)
-  - 
+  -
 
 ## Db schema
-- table: `userAccountIdMapping` 
+- table: `userAccountIdMapping`
 ```
 phone (pk)
 id
@@ -46,9 +46,23 @@ createdAt
 currentActive
 ```
 
+- table: `userRequestIdMapping`
+```
+phone(pk)
+id
+```
+
+- table: `floatingCashRequest`
+indicates latest ask for floating cash request id
+```
+phone(pk)
+id
+```
+
 - table: `userRequest`
 ```
-phone (pk)
+id (pk)
+phone
 requestType
 where
 money
@@ -148,7 +162,7 @@ const op = {
 ```
 ## Docs
 - [Dynamodb document client](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/dynamodb-example-document-client.html)
-- Setup awscli for deploy script `deploy.sh`: 
+- Setup awscli for deploy script `deploy.sh`:
 ```
 python3 -m venv .venv
 .venv/bin/pip install awscli
@@ -190,11 +204,11 @@ Upload zip
 Runtimes: Node.js 14.x
 ```
 
-5. Use the layer in lambda function. 
-This prevents bundling `node_modules` with zip that is deployed to lambda. Reduces the lambda zip package size and prevents version conflicts with lambda preinstalled packages.  
+5. Use the layer in lambda function.
+This prevents bundling `node_modules` with zip that is deployed to lambda. Reduces the lambda zip package size and prevents version conflicts with lambda preinstalled packages.
 
 ---
-**Note:** If `elasticache` is in private subnet 
+**Note:** If `elasticache` is in private subnet
 - Lambda function needs to be inside vpc and must be associated with privates subnets same as `elasticache`
 - AWS VPC endpoints needs to be setup for - `SQS` & `DynamoDB`, since requests for these services travels through internet
 - Environment variables (Key: Value), needs to be set for lambda functions:
@@ -208,14 +222,14 @@ SECRET_ACCESS_KEY:	---
 - Modify config: timeout to 30seconds at least, Memory to 256mb
 - Add follwing policies to the role (not ideal setup, just a shotgun approach):
 ```shell
-AWSLambdaBasicExecutionRole-64...ef	(already exist, add the remaining 👇)	
-AmazonSQSFullAccess	
-AmazonElastiCacheFullAccess	
-AmazonDynamoDBFullAccess	
-AWSLambdaDynamoDBExecutionRole	
-AdministratorAccess	
-AWSLambdaSQSQueueExecutionRole	
-AWSLambdaInvocation-DynamoDB	
+AWSLambdaBasicExecutionRole-64...ef	(already exist, add the remaining 👇)
+AmazonSQSFullAccess
+AmazonElastiCacheFullAccess
+AmazonDynamoDBFullAccess
+AWSLambdaDynamoDBExecutionRole
+AdministratorAccess
+AWSLambdaSQSQueueExecutionRole
+AWSLambdaInvocation-DynamoDB
 AWSLambdaVPCAccessExecutionRole
 ```
 ---

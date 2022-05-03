@@ -184,8 +184,38 @@ async function twSend() {
     console.log(`twilio resp: ${JSON.stringify(res)}`);
 }
 
-twSend().then(process.exit);
+// twSend().then(process.exit);
 
+
+async function search() {
+    const params = {
+        TableName: 'userAccount',
+        Limit: 1,
+        FilterExpression: "loc = :loc",
+        ExpressionAttributeValues: {
+            ':loc': 'HSR'
+        }
+    }
+    let res = await ddbDocClient.scan(params).promise()
+    console.log(`res: ${JSON.stringify(res)}`)
+    let account;
+    if (res.Items.length === 0 && res.LastEvaluatedKey && 'id' in res.LastEvaluatedKey) {
+        while (res.Items.length === 0 && res.LastEvaluatedKey && 'id' in res.LastEvaluatedKey) {
+            res = await ddbDocClient.scan({...params, ExclusiveStartKey: res.LastEvaluatedKey}).promise()
+            console.log(`res: ${JSON.stringify(res)}`)
+            if (res.Items.length > 0) {
+                account = res.Items[0];
+            }
+            if (!res.LastEvaluatedKey || !('id' in res.LastEvaluatedKey)) {
+                break
+            }
+        }
+    }
+
+    console.log(`found: ${JSON.stringify(account)}`);
+}
+
+search().then(process.exit)
 
 
 

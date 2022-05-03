@@ -1,3 +1,4 @@
+const String = require('./utils');
 const {cache, ddbDocClient} = require('./clients');
 const {randomUUID} = require('crypto');
 const constants = require('./constants');
@@ -13,8 +14,40 @@ const {
     deactivateUserAccount,
     getUserAccount,
     addNewUserAccountRecord,
-    updateUserAccountIdMapping, getTxn, addNewTxn, addNewUserAccountIdMapping
+    updateUserAccountIdMapping,
+    getTxn,
+    addNewTxn,
+    addNewUserAccountIdMapping,
+    findHumanForDeposit,
+    findHumanAtLocation,
+    findFloatingRequest,
+    getUserRequestById,
+    updateTxnStatusToSuccess, createTxn
 } = require("./dal");
+
+const handleRegisterNewAccount = async (phone, pan, name, location) => {
+    console.log(`registering new account for ${phone}, ${pan}, ${name}, ${location}`);
+    const account = await getAccountIdMapping(phone)
+    if (account === null) {
+        const newId = randomUUID();
+        await addNewUserAccountRecord({
+            'phone': phone.toPhoneNumberDbKey(),
+            'id': newId,
+            'name': name,
+            'loc': location,
+            'pan': pan,
+            'verification': 'soft',
+            'balance': 0,
+            'currentActive': true,
+            'createdAt': Date.now(),
+        })
+        await addNewUserAccountIdMapping(phone, newId)
+        console.log(`New account registered for phone: ${phone} account id: ${newId}`)
+        await sendSms(phone, 'SUCCESS')
+    } else {
+        console.log(`user account for ${phone} already exists`)
+    }
+}
 
 const handleUpdateBalance = async (phone, op, money, note) => {
     const newId = randomUUID()
@@ -62,114 +95,138 @@ const addLedgerEntry = async (whose, note, money, op, opening) => {
     console.log(`ledger entry added: ${JSON.stringify(entry)}`);
 }
 
-const handleFindDeposit = async (who, howMuch, where) => {
-    console.log(`findDeposit for ${who} Rs.${howMuch} in ${where}`);
-    const params = {
-        TableName: constants.accountTable,
-        Limit: 2,
-        FilterExpression: "balance >= :balance AND loc = :loc",
-        ExpressionAttributeValues: {
-            ":balance": {'N': howMuch},
-            ":loc": {'S': where}
-        }
+const handleFindDeposit = async (whoRequested, howMuch, where) => {
+    console.log(`find human to receive deposit from ${whoRequested} Rs.${howMuch} in ${where}`);
+    const humanAtmFound = await findHumanForDeposit(howMuch, where)
+    let status = 'requested';
+    if (humanAtmFound) {
+        // send sms response to requester
+        await sendSms(
+            whoRequested,
+            `${humanAtmFound.name} ${humanAtmFound.phone}`
+        );
+        status = 'fulfilled';
     }
-    //todo: check cache before scanning db
-
-    // todo: migrate to  and to dal
-    // await ddb.scan(params).promise().then(async (res) => {
-    //     if (res['Items'].length > 0) {
-    //         console.log(`search results: ${JSON.stringify(res['Items'])}`)
-    //         // cache result
-    //         const key = `deposit:${howMuch}:${where}`;
-    //         await cache.set(key, JSON.stringify(res.Items)).then(_ => {console.log(`cache set ${key}`)});
-    //         // send sms response to requester
-    //         sendSms(res['Item'].phone, `${res['Item'].name} ${res['Item'].phone}`)
-    //         // save the request
-    //         await writeToDb(constants.requestTable, {
-    //             'phone': {'S': who},
-    //             'requestType': {'S': constants.requestType.findDeposit},
-    //             'where': {'S': where},
-    //             'money': {'N': howMuch},
-    //             'otherAccount': {'S': ''},
-    //             'status': {'S': 'requested'},
-    //             'extraInfo': {'S': ''},
-    //             'currentActive': {'BOOL': true},
-    //             'createdAt': {'N': Date.now()}
-    //         })
-    //     }
-    // });
+    // save the request
+    await writeToDb(constants.requestTable, {
+        id: randomUUID(),
+        'phone': whoRequested,
+        'requestType': constants.requestType.findDeposit,
+        'where': where,
+        'money': howMuch,
+        'otherAccount': humanAtmFound.phone,
+        'status': status,
+        'extraInfo': '',
+        'currentActive': true,
+        'createdAt': Date.now()
+    });
 }
 
 const handleDeposit = async (firstParty, howMuch, secondParty) => {
     console.log(`handleDeposit for ${firstParty} Rs.${howMuch} with ${secondParty}`);
     // optional todo: verification if requested user for deposit was same returned in find result
-    // create new txn
-    const txnId = generateUniqueId(constants.txnUidSize, (id) => getTxn(id) === null)
-    await addNewTxn({
-        'txnId': txnId,
-        'firstParty': firstParty,
-        'secondParty': secondParty.length === 10 ? `91${secondParty}` : secondParty,
-        'requestType': constants.requestType.deposit,
+    // create new txn & save in db
+    await createTxn(
+        firstParty,
+        secondParty,
+        constants.requestType.deposit,
+        howMuch,
+        firstParty.toPhoneNumber(),
+        secondParty.toPhoneNumber(),
+    )
+}
+
+const handleFindWithdraw = async (whoRequested, howMuch, where) => {
+    // blast out sms to nearby people asking for floating cash
+    const humanAtmFound = await findHumanAtLocation(location)
+    let status = 'requested';
+    if (humanAtmFound) {
+        await sendSms(humanAtmFound['phone'], `${howMuch} FLOATING?`)
+        status = 'fulfilled'
+    }
+    // save the request in db
+    const id = randomUUID()
+    await writeToDb(constants.requestTable, {
+        id,
+        'phone': whoRequested,
+        'requestType': constants.requestType.findWithdraw,
+        'where': where,
         'money': howMuch,
-        'status': constants.txnStatus.created,
-        'createdAt': Date.now(),
-        'currentActive':  true,
+        'otherAccount': humanAtmFound.phone,
+        'status': status,
+        'extraInfo': '',
+        'currentActive': true,
+        'createdAt': Date.now()
     });
-    // send txn id
-    sendSms(firstParty.toPhoneNumber(), txnId)
-    // generate otp
-    const otp = generateOtp()
-    const key = constructCacheKeyForOtp(txnId)
-    // save otp in cache
-    await cache.set(key, otp, {EX: constants.otpExpiryInSeconds}).then(_ => {
-        console.log(`cache set for key ${key}`);
+    await writeToDb(constants.floatingTable, {
+        phone: humanAtmFound.phone,
+        id,
     });
-    // send otp
-    sendSms(secondParty.toPhoneNumber(), otp)
 }
 
-const handleWithdraw = () => {
-
+const handleWithdraw = async (firstParty, howMuch, secondParty) => {
+    await createTxn(
+        firstParty,
+        secondParty,
+        constants.requestType.withdraw,
+        howMuch,
+        secondParty.toPhoneNumber(),
+        firstParty.toPhoneNumber(),
+    )
 }
 
-const handleRegisterNewAccount = async (phone, pan, name, location) => {
-    console.log(`registering new account for ${phone}, ${pan}, ${name}, ${location}`);
-    const account = await getAccountIdMapping(phone)
-    if (account === null) {
-        const newId = randomUUID();
-        await addNewUserAccountRecord({
-            'phone': phone,
-            'id': newId,
-            'name': name,
-            'loc': location,
-            'pan': pan,
-            'verification': 'soft',
-            'balance': 0,
-            'currentActive': true,
-            'createdAt': Date.now(),
-        })
-        await addNewUserAccountIdMapping(phone, newId)
-        console.log(`New account registered for phone: ${phone} account id: ${newId}`)
-        await sendSms(phone, 'SUCCESS')
-    } else {
-        console.log(`user account for ${phone} already exists`)
+const handleFloating = (who, howMuch) => {
+    // todo: implement
+}
+
+// answer to floating cash
+const handleYesNoType = async (who, response) => {
+    if (response.toUpperCase() === 'YES') {
+        // todo: if response is NO call retry find withdraw process
+        return
+    }
+    // fetch the original request
+    const floatingRequestFound = await findFloatingRequest(who)
+    if (floatingRequestFound) {
+        const originalRequest = getUserRequestById(floatingRequestFound.id);
+        const foundUserAccountIdMapping = getAccountIdMapping(who)
+        const foundHuman = getUserAccount(foundUserAccountIdMapping['id']);
+        // send sms to requester
+        await sendSms(
+            originalRequest['phone'],
+            `${foundHuman['name']} ${who}`
+        )
     }
 }
 
-const handleFloating = () => {}
+const handlePayment = async (seller, howMuch, buyer) => {
+    await createTxn(
+        seller,
+        buyer,
+        constants.requestType.pay,
+        howMuch,
+        buyer.toPhoneNumber(),
+        seller.toPhoneNumber(),
+    )
+}
 
-// answer to floating cash
-const handleYesNoType = () => {}
-
-const handlePayment = () => {}
-
-const handleTransfer = () => {}
+const handleTransfer = async (sender, howMuch, receiver) => {
+    await createTxn(
+        sender,
+        receiver,
+        constants.requestType.transfer,
+        howMuch,
+        sender.toPhoneNumber(),
+        receiver.toPhoneNumber(),
+    )
+}
 
 const handleSeeBalance = () => {}
 
 const handleSip = () => {}
 
 const handleAccountDepositCashCollection = () => {}
+
 
 const handleTransactionVerification = async (from, message) => {
     if (message.split(' ').length === 2) {
@@ -183,16 +240,57 @@ const handleTransactionVerification = async (from, message) => {
             if (cachedOtp === userOtp) {
                 switch (txn.requestType) {
                     case constants.requestType.deposit:
-                        await handleUpdateBalance(txn['firstParty'], constants.op.credit, txn['money'], `ATM deposit, txnId ${txnId}`)
-                        await handleUpdateBalance(txn['secondParty'], constants.op.debit, txn['money'], `received ATM deposit, txnId ${txnId}`)
-                        break;
-                    case constants.requestType.collect:
+                        await handleUpdateBalance(
+                            txn['firstParty'],
+                            constants.op.credit,
+                            txn['money'],
+                            `ATM deposit, txnId ${txnId}`
+                        );
+                        await handleUpdateBalance(
+                            txn['secondParty'],
+                            constants.op.debit,
+                            txn['money'],
+                            `received ATM deposit, txnId ${txnId}`);
+                        await updateTxnStatusToSuccess(txnId);
                         break;
                     case constants.requestType.withdraw:
+                        await handleUpdateBalance(
+                            txn['firstParty'],
+                            constants.op.debit,
+                            txn['money'],
+                            `ATM withdraw, txnId ${txnId}`
+                        );
+                        await updateTxnStatusToSuccess(txnId);
                         break;
                     case constants.requestType.pay:
+                        await handleUpdateBalance(
+                            txn['firstParty'],
+                            constants.op.credit,
+                            txn['money'],
+                            `Payment received, txnId ${txnId}`
+                        );
+                        await handleUpdateBalance(
+                            txn['secondParty'],
+                            constants.op.debit,
+                            txn['money'],
+                            `Payment done, txnId ${txnId}`);
+                        await updateTxnStatusToSuccess(txnId);
                         break;
                     case constants.requestType.transfer:
+                        await handleUpdateBalance(
+                            txn['firstParty'],
+                            constants.op.debit,
+                            txn['money'],
+                            `Transfer done, txnId ${txnId}`
+                        );
+                        await handleUpdateBalance(
+                            txn['secondParty'],
+                            constants.op.credit,
+                            txn['money'],
+                            `Transfer received, txnId ${txnId}`);
+                        await updateTxnStatusToSuccess(txnId);
+                        break;
+                    case constants.requestType.collect:
                         break;
                     default:
                         break;
@@ -236,27 +334,41 @@ exports.handler = async (event) => {
         if (message.startsWith('DEPOSIT')) {
             const howMuch = message.replace('DEPOSIT ').split(' ')[0]
             const secondParty = message.replace('DEPOSIT ').split(' ')[1]
-            await handleDeposit(sender, howMuch, secondParty)
+            await handleDeposit(sender.toPhoneNumberDbKey(), howMuch, secondParty.toPhoneNumberDbKey())
             return;
         }
-
+        if (message.startsWith('FIND WITHDRAW')) {
+            await handleFindWithdraw(
+                sender,
+                message.replace('FIND WITHDRAW ').split(' ')[0],
+                message.replace('FIND WITHDRAW ').split(' ')[1]
+            )
+            return;
+        }
         if (message.startsWith('WITHDRAW')) {
-            // todo: implement
+            await handleWithdraw(
+                sender.toPhoneNumberDbKey(),
+                message.replace('WITHDRAW ').split(' ')[0],
+                message.replace('WITHDRAW ').split(' ')[1].toPhoneNumberDbKey()
+            )
             return;
         }
-
-        if (message.startsWith('FLOATING')) {
-            // todo: implement
+        if (message.toUpperCase().startsWith('YES') || message.toUpperCase().startsWith('NO')) {
+            await handleYesNoType(sender, message.toUpperCase());
             return;
         }
 
         if (message.startsWith('PAYMENT')) {
-            // todo: implement
+            const howMuch = message.replace('PAYMENT ').split(' ')[0]
+            const customer = message.replace('PAYMENT ').split(' ')[1]
+            await handlePayment(sender.toPhoneNumberDbKey(), howMuch, customer.toPhoneNumberDbKey());
             return;
         }
 
         if (message.startsWith('TRANSFER')) {
-            // todo: implement
+            const howMuch = message.replace('TRANSFER ').split(' ')[0]
+            const receiver = message.replace('TRANSFER ').split(' ')[1]
+            await handleTransfer(sender.toPhoneNumberDbKey(), howMuch, receiver.toPhoneNumberDbKey());
             return;
         }
 
@@ -277,6 +389,11 @@ exports.handler = async (event) => {
         }
 
         if (message.startsWith('RECEIVING')) {
+            // todo: implement
+            return;
+        }
+
+        if (message.startsWith('FLOATING')) {
             // todo: implement
             return;
         }
