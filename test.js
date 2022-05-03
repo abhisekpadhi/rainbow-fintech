@@ -127,4 +127,68 @@ async function updateItem(phone, money) {
 
 // updateItem('111', 1650).then(process.exit)
 
-queryExample().then(process.exit);
+async function sendSms() {
+    const apiUrl = "https://api.checkmobi.com/v1/sms/send";
+    const headers = {'Content-Type': 'application/json', 'Authorization': '213C4E58-04D0-4C18-9E9A-A669C8B37BD1'};
+    const json = { to: '+919439831236', text: 'PRATIK 987654231'}
+
+    console.log(body);
+}
+
+const fetch = require('node-fetch');
+
+async function vonSend() {
+    const from = "Vonage APIs"
+    const to = "919439831236"
+    const text = 'SANDIP 9876543210'
+    const apiUrl = 'https://rest.nexmo.com/sms/json';
+    const api_key = "283630a8";
+    const api_secret = "PGq4DZq3tGqE4z5p";
+    const json = {to, from ,text, api_key, api_secret}
+
+    const myHeaders = {"Content-Type": "application/x-www-form-urlencoded"};
+
+    const urlencoded = new URLSearchParams();
+    urlencoded.append("from", from);
+    urlencoded.append("to", to);
+    urlencoded.append("text", text);
+    urlencoded.append("api_key", api_key);
+    urlencoded.append("api_secret", api_secret);
+
+    const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: urlencoded,
+        redirect: 'follow'
+    };
+
+    const res = await fetch(apiUrl, requestOptions)
+    const data = await res.json();
+    console.log(`vonage resp: ${JSON.stringify(data)}`);
+}
+
+// vonSend().then(process.exit)
+
+const accountSid = 'ACf37cc06ababa04e584dddca66c334b3b'
+const authToken = '68b583a9bea130eb636a4f3f16833a12'
+const twPhone = '+19705192728';
+const client = require('twilio')(accountSid, authToken);
+
+async function twSend() {
+    const res = await client.messages
+        .create({
+            body: 'TOTAL 4600',
+            from: twPhone,
+            to: '+919439831236'
+        })
+    console.log(`twilio resp: ${JSON.stringify(res)}`);
+}
+
+twSend().then(process.exit);
+
+
+
+
+
+
+

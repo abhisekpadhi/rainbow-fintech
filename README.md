@@ -10,8 +10,8 @@ An offline & mobile first neo-bank for underserved population.
     - Cache: Elasticache
     - Broker: SQS
 - SMS:
-  - Receiving: [textlocal](https://textlocal.in)
-  - Sending: [gupshup](https://gupshup.io)
+  - Receiving: [textlocal](https://textlocal.in) - +919220592205
+  - Sending: [twilio](https://twilio.com) - 
 
 ## Db schema
 - table: `userAccountIdMapping` 
@@ -169,7 +169,7 @@ worker (process sms)
 1. create directory structure:
 ```shell
 mkdir -p aws-sdk-layer/nodejs
-cd aws-sdk-layer/node
+cd aws-sdk-layer/nodejs
 ```
 
 2. Use amazon linux 2 compatible environment to install required packages:

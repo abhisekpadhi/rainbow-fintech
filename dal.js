@@ -4,21 +4,16 @@ const {writeToDb} = require('./utils');
 
 const getAccountIdMapping = async (phone) => {
     console.log(`gettingAccountIdMapping for ${phone}, tbl: ${constants.userAccountIdMappingTable}`);
-    const accountIdMapping = await ddbDocClient.query({
+    const data = await ddbDocClient.get({
         TableName: constants.userAccountIdMappingTable,
-        Limit: 1,
-        KeyConditionExpression: "phone = :phone",
-        ExpressionAttributeValues: {
-            ':phone': phone
-        }
+        Key: { phone }
     }).promise()
-    console.log(`accountIdMapping for ${phone} query result: ${JSON.stringify(accountIdMapping)}`);
-    if (accountIdMapping['Items'].length === 0) {
-        console.log(`accountIdMapping not found for phone ${phone}`)
-        return null
-    } else {
-        return accountIdMapping['Items'][0]
+    console.log(`accountIdMapping for ${phone} query result: ${JSON.stringify(data)}`);
+    if ('Item' in data) {
+        return data['Item'];
     }
+    console.log(`accountIdMapping not found for phone ${phone}`);
+    return null;
 }
 
 const deactivateUserAccount = async (oldId) => {

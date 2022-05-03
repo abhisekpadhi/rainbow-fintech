@@ -1,4 +1,4 @@
-const {cache} = require('./clients');
+const {cache, ddbDocClient} = require('./clients');
 const {randomUUID} = require('crypto');
 const constants = require('./constants');
 const {
@@ -15,8 +15,6 @@ const {
     addNewUserAccountRecord,
     updateUserAccountIdMapping, getTxn, addNewTxn, addNewUserAccountIdMapping
 } = require("./dal");
-
-cache.connect().then(_ => { console.log(`cache connected`)});
 
 const handleUpdateBalance = async (phone, op, money, note) => {
     const newId = randomUUID()
@@ -140,6 +138,7 @@ const handleRegisterNewAccount = async (phone, pan, name, location) => {
     if (account === null) {
         const newId = randomUUID();
         await addNewUserAccountRecord({
+            'phone': phone,
             'id': newId,
             'name': name,
             'loc': location,
@@ -150,7 +149,7 @@ const handleRegisterNewAccount = async (phone, pan, name, location) => {
             'createdAt': Date.now(),
         })
         await addNewUserAccountIdMapping(phone, newId)
-        console.log(`new account registered for phone: ${phone} account id: ${newId}`)
+        console.log(`New account registered for phone: ${phone} account id: ${newId}`)
         await sendSms(phone, 'SUCCESS')
     } else {
         console.log(`user account for ${phone} already exists`)
@@ -206,13 +205,15 @@ const handleTransactionVerification = async (from, message) => {
 
 // check README.md for event schema - message received from SQS
 exports.handler = async (event) => {
+    Object.freeze(event);
+
     console.log(`received message from sqs: ${JSON.stringify(event)}`)
 
     // delete messages from sqs
     await deleteReadMessage(event['Records'])
 
     // process received messages
-    event['Records'].forEach(record => {
+    for (const record of event['Records']) {
         const body = JSON.parse(record.body);
         const sender = body['sender'];
         const message = body['content'].replace('NLLG7 ', ''); // strip the textlocal sms prefix
@@ -222,10 +223,10 @@ exports.handler = async (event) => {
             const pan = splitted[0]
             const name = splitted[1]
             const location = splitted[2]
-            handleRegisterNewAccount(sender, pan, name, location)
+            await handleRegisterNewAccount(sender, pan, name, location)
         }
         if (message.startsWith('FIND DEPOSIT')) {
-            handleFindDeposit(
+            await handleFindDeposit(
                 sender,
                 message.replace('FIND DEPOSIT ').split(' ')[0],
                 message.replace('FIND DEPOSIT ').split(' ')[1]
@@ -235,7 +236,7 @@ exports.handler = async (event) => {
         if (message.startsWith('DEPOSIT')) {
             const howMuch = message.replace('DEPOSIT ').split(' ')[0]
             const secondParty = message.replace('DEPOSIT ').split(' ')[1]
-            handleDeposit(sender, howMuch, secondParty)
+            await handleDeposit(sender, howMuch, secondParty)
             return;
         }
 
@@ -282,8 +283,8 @@ exports.handler = async (event) => {
 
         // otherwise the message will be transaction id and otp for verification
         // todo: handle
-        handleTransactionVerification(sender, message)
-    })
+        await handleTransactionVerification(sender, message)
+    }
 
     return {
         statusCode: 200,
