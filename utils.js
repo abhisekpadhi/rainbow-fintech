@@ -7,10 +7,11 @@ const {
 } = require("./clients.js");
 const {twilioSendSms, gupshupSendSms} = require("./sms");
 
+// this template is DLT registered (consider immutable)
 const constructSms = (var1, var2) => {
     return (
         'Dear user,\n' +
-        'You SubNub query result is' + var1 + ' ' + var2 + '. Please do not share this.\n' +
+        'You SubNub query result is ' + var1 + ' ' + (var2 ? var2 : '') + '. Please do not share this.\n' +
         '\n' +
         'Regards,\n' +
         'SubNub Team '
