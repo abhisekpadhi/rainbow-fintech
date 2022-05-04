@@ -28,31 +28,37 @@ const deactivateUserAccount = async (oldId) => {
 }
 
 const getUserAccount = async (id) => {
-    const res = await ddbDocClient.query({
-        TableName: 'userAccount',
-        KeyConditionExpression: 'id = :id',
-        ExpressionAttributeValues: {
-            ':id': id
-        }
+    const res = await ddbDocClient.get({
+        TableName: constants.accountTable,
+        Key: {id},
     }).promise();
-    if (res['Items'].length === 0) {
-        console.log(`getUserAccount not found for id ${id}`)
-        return null
-    } else {
-        return res['Items'][0]
+    if ('Item' in res) {
+        return res['Item'];
     }
+    return null;
+}
+
+const getUserAccountByPhone = async (phone) => {
+    const mapping = await ddbDocClient.get({
+        TableName: constants.userAccountIdMappingTable,
+        Key: { phone }
+    }).promise()
+    if (mapping && 'Item' in mapping) {
+        return await getUserAccount(mapping.Item.id);
+    }
+    return null
 }
 
 const addNewUserAccountRecord = async (data) => {
     await ddbDocClient.put({
-        TableName: 'userAccount',
+        TableName: constants.accountTable,
         Item: {...data, 'currentActive': true, createdAt: Date.now()},
     }).promise();
 }
 
 const updateUserAccountIdMapping = async (phone, newId) => {
     await ddbDocClient.update({
-        TableName: 'userAccountIdMapping',
+        TableName: constants.userAccountIdMappingTable,
         Key: { 'phone': phone },
         UpdateExpression: 'set id = :id',
         ExpressionAttributeValues: {
@@ -208,7 +214,54 @@ const createTxn = async (firstParty,
     await sendSms(sendOtpTo.toPhoneNumber(), otp)
 }
 
+const addLedgerEntry = async (whose, note, money, op, opening) => {
+    const entry = {
+        'phone': whose,
+        'op': op,
+        'note': note,
+        'money': money,
+        'openingBalance': opening,
+        'createdAt': Date.now()
+    }
+    await writeToDb(constants.ledgerTable, entry);
+    console.log(`ledger entry added: ${JSON.stringify(entry)}`);
+}
+
+const getBucket = async (phoneWithBucketName) => {
+    const res = await ddbDocClient.get({
+        TableName: constants.bucketTable,
+        Key: { phoneWithBucketName }
+    }).promise()
+    if ('Item' in res) {
+        return res['Item'];
+    }
+    return null;
+}
+
+const getBucketBalance = async (phone, bucketName) => {
+    const res = await getBucket(constructUserBucketKey(phone, bucketName));
+    if (res && 'balance' in res) {
+        return res.balance;
+    }
+    return null;
+}
+
+const constructUserBucketKey = (phone, bucketName) => `${phone.toPhoneNumberDbKey()}:${bucketName}`;
+
+const updateBucket = async (phone, bucketName, howMuch) => {
+    const existing = await getBucket(constructUserBucketKey(phone, bucketName))
+    await writeToDb(constants.bucketTable, {
+        phoneWithBucketName: constructUserBucketKey(phone, bucketName),
+        balance: existing ? existing.balance + howMuch : howMuch
+    });
+};
+
 module.exports = {
+    getBucketBalance,
+    updateBucket,
+    getBucket,
+    getUserAccountByPhone,
+    addLedgerEntry,
     createTxn,
     updateTxnStatusToSuccess,
     getUserRequestById,

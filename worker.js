@@ -1,10 +1,8 @@
 const String = require('./utils');
-const {cache, ddbDocClient} = require('./clients');
+const {cache} = require('./clients');
 const {randomUUID} = require('crypto');
 const constants = require('./constants');
 const {
-    generateOtp,
-    generateUniqueId,
     constructCacheKeyForOtp,
     writeToDb,
     sendSms, deleteReadMessage,
@@ -16,13 +14,14 @@ const {
     addNewUserAccountRecord,
     updateUserAccountIdMapping,
     getTxn,
-    addNewTxn,
     addNewUserAccountIdMapping,
     findHumanForDeposit,
     findHumanAtLocation,
     findFloatingRequest,
     getUserRequestById,
-    updateTxnStatusToSuccess, createTxn
+    updateTxnStatusToSuccess,
+    createTxn,
+    addLedgerEntry, getUserAccountByPhone, updateBucket, getBucket, getBucketBalance
 } = require("./dal");
 
 const handleRegisterNewAccount = async (phone, pan, name, location) => {
@@ -80,19 +79,6 @@ const handleUpdateBalance = async (phone, op, money, note) => {
     // update phone to id mapping
     await updateUserAccountIdMapping(accountMapping['phone'], newId)
     console.log(`accountIdMapping updated for phone ${phone} to ${newId}`);
-}
-
-const addLedgerEntry = async (whose, note, money, op, opening) => {
-    const entry = {
-        'phone': whose,
-        'op': op,
-        'note': note,
-        'money': money,
-        'openingBalance': opening,
-        'createdAt': Date.now()
-    }
-    await writeToDb(constants.ledgerTable, entry);
-    console.log(`ledger entry added: ${JSON.stringify(entry)}`);
 }
 
 const handleFindDeposit = async (whoRequested, howMuch, where) => {
@@ -175,14 +161,12 @@ const handleWithdraw = async (firstParty, howMuch, secondParty) => {
     )
 }
 
-const handleFloating = (who, howMuch) => {
-    // todo: implement
-}
+
 
 // answer to floating cash
 const handleYesNoType = async (who, response) => {
     if (response.toUpperCase() === 'YES') {
-        // todo: if response is NO call retry find withdraw process
+        // optional todo: if response is NO call retry find withdraw process
         return
     }
     // fetch the original request
@@ -221,11 +205,39 @@ const handleTransfer = async (sender, howMuch, receiver) => {
     )
 }
 
-const handleSeeBalance = () => {}
+const handleSeeBalance = async (phone) => {
+    const account = await getUserAccountByPhone(phone);
+    if (account) {
+        // send sms
+        await sendSms(phone, account.balance);
+    }
+}
 
-const handleSip = () => {}
+const handleReceiveDeposit = async (agent, howMuch, customer) => {
+    await createTxn(
+        agent,
+        customer,
+        howMuch,
+        constants.requestType.collect,
+        customer.toPhoneNumber(),
+        agent.toPhoneNumber(),
+    )
+}
 
-const handleAccountDepositCashCollection = () => {}
+const handleFloating = (who, howMuch) => {
+    // todo: implement
+}
+
+const handleBucket = async (who, bucketName, howMuch) => {
+    await updateBucket(who, bucketName, howMuch);
+}
+
+const handleGetBucketBalance = async (who, bucketName) => {
+    const balance = await getBucketBalance(who, bucketName);
+    if (balance) {
+        await sendSms(who, balance);
+    }
+}
 
 
 const handleTransactionVerification = async (from, message) => {
@@ -244,13 +256,13 @@ const handleTransactionVerification = async (from, message) => {
                             txn['firstParty'],
                             constants.op.credit,
                             txn['money'],
-                            `ATM deposit, txnId ${txnId}`
+                            `ATM deposit done, txnId ${txnId}`
                         );
                         await handleUpdateBalance(
                             txn['secondParty'],
                             constants.op.debit,
                             txn['money'],
-                            `received ATM deposit, txnId ${txnId}`);
+                            `ATM deposit received, txnId ${txnId}`);
                         await updateTxnStatusToSuccess(txnId);
                         break;
                     case constants.requestType.withdraw:
@@ -258,7 +270,7 @@ const handleTransactionVerification = async (from, message) => {
                             txn['firstParty'],
                             constants.op.debit,
                             txn['money'],
-                            `ATM withdraw, txnId ${txnId}`
+                            `ATM withdraw done, txnId ${txnId}`
                         );
                         await updateTxnStatusToSuccess(txnId);
                         break;
@@ -291,6 +303,11 @@ const handleTransactionVerification = async (from, message) => {
                         await updateTxnStatusToSuccess(txnId);
                         break;
                     case constants.requestType.collect:
+                        await handleUpdateBalance(
+                            txn['secondParty'],
+                            constants.op.credit,
+                            txn['money'],
+                            `Collected cash, txnId ${txnId}`);
                         break;
                     default:
                         break;
@@ -321,11 +338,16 @@ exports.handler = async (event) => {
             const pan = splitted[0]
             const name = splitted[1]
             const location = splitted[2]
-            await handleRegisterNewAccount(sender, pan, name, location)
+            await handleRegisterNewAccount(
+                sender.toPhoneNumberDbKey(),
+                pan,
+                name,
+                location
+            )
         }
         if (message.startsWith('FIND DEPOSIT')) {
             await handleFindDeposit(
-                sender,
+                sender.toPhoneNumberDbKey(),
                 message.replace('FIND DEPOSIT ').split(' ')[0],
                 message.replace('FIND DEPOSIT ').split(' ')[1]
             )
@@ -339,7 +361,7 @@ exports.handler = async (event) => {
         }
         if (message.startsWith('FIND WITHDRAW')) {
             await handleFindWithdraw(
-                sender,
+                sender.toPhoneNumberDbKey(),
                 message.replace('FIND WITHDRAW ').split(' ')[0],
                 message.replace('FIND WITHDRAW ').split(' ')[1]
             )
@@ -354,53 +376,72 @@ exports.handler = async (event) => {
             return;
         }
         if (message.toUpperCase().startsWith('YES') || message.toUpperCase().startsWith('NO')) {
-            await handleYesNoType(sender, message.toUpperCase());
+            await handleYesNoType(
+                sender.toPhoneNumberDbKey(),
+                message.toUpperCase()
+            );
             return;
         }
 
         if (message.startsWith('PAYMENT')) {
             const howMuch = message.replace('PAYMENT ').split(' ')[0]
             const customer = message.replace('PAYMENT ').split(' ')[1]
-            await handlePayment(sender.toPhoneNumberDbKey(), howMuch, customer.toPhoneNumberDbKey());
+            await handlePayment(
+                sender.toPhoneNumberDbKey(),
+                howMuch,
+                customer.toPhoneNumberDbKey()
+            );
             return;
         }
 
         if (message.startsWith('TRANSFER')) {
             const howMuch = message.replace('TRANSFER ').split(' ')[0]
             const receiver = message.replace('TRANSFER ').split(' ')[1]
-            await handleTransfer(sender.toPhoneNumberDbKey(), howMuch, receiver.toPhoneNumberDbKey());
+            await handleTransfer(
+                sender.toPhoneNumberDbKey(),
+                howMuch,
+                receiver.toPhoneNumberDbKey()
+            );
             return;
         }
-
         // account balance as well as bucket balance
         if (message.startsWith('BALANCE')) {
-            // todo: implement
+            await handleSeeBalance(sender);
             return;
         }
-
+        // handle cash collection
+        if (message.startsWith('RVCDEPOSIT')) {
+            const howMuch = message.replace('RCVDEPOSIT ').split(' ')[0];
+            const customer = message.replace('RCVDEPOSIT ').split(' ')[1];
+            await handleReceiveDeposit(
+                sender.toPhoneNumberDbKey(),
+                howMuch,
+                customer.toPhoneNumberDbKey()
+            );
+            return;
+        }
+        // get bucket balance
         if (message.startsWith('GET')) {
-            // todo: implement
+            await handleGetBucketBalance(
+                sender.toPhoneNumberDbKey(),
+                message.replace('GET ').split(' ')[0]
+            );
             return;
         }
 
+        // for raising request to collect cash for account deposit
         if (message.startsWith('ACCOUNT')) {
             // todo: implement
             return;
         }
-
-        if (message.startsWith('RECEIVING')) {
-            // todo: implement
-            return;
-        }
-
+        // declare floating cash
         if (message.startsWith('FLOATING')) {
             // todo: implement
             return;
         }
 
         // otherwise the message will be transaction id and otp for verification
-        // todo: handle
-        await handleTransactionVerification(sender, message)
+        await handleTransactionVerification(sender, message);
     }
 
     return {

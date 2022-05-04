@@ -7,6 +7,7 @@ module.exports = Object.freeze({
     accountTable: 'userAccount',
     ledgerTable: 'userLedger',
     txnTable: 'userTxn',
+    bucketTable: 'userBucket',
     requestType: {
         deposit: 'deposit',
         withdraw: 'withdraw',
@@ -18,7 +19,7 @@ module.exports = Object.freeze({
         sip: 'sip',
         bucket: 'bucket',
         findDeposit: 'findDeposit',
-        findWithdraw: 'findWithdraw'
+        findWithdraw: 'findWithdraw',
     },
     txnStatus: {
         created: 'created',

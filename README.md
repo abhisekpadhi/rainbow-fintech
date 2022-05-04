@@ -12,7 +12,6 @@ An offline & mobile first neo-bank for underserved population.
 - SMS:
   - Receiving: [textlocal](https://textlocal.in) - +919220592205
   - Sending: [twilio](https://twilio.com) | [gupshup](https://enterprise.smsgupshup.com)
-  -
 
 ## Db schema
 - table: `userAccountIdMapping`
@@ -46,12 +45,6 @@ createdAt
 currentActive
 ```
 
-- table: `userRequestIdMapping`
-```
-phone(pk)
-id
-```
-
 - table: `floatingCashRequest`
 indicates latest ask for floating cash request id
 ```
@@ -82,6 +75,12 @@ note
 money
 openingBalance
 createdAt
+```
+
+- table `userBucket`
+```
+phoneWithBucketName (pk)
+balance
 ```
 
 - enums
