@@ -61,7 +61,7 @@ const handleUpdateBalance = async (phone, op, money, note) => {
     // deactivate old userAccount record
     await deactivateUserAccount(accountMapping['id'])
     console.log(`old record deactivated`);
-    const oldUserAccount = getUserAccount(oldId);
+    const oldUserAccount = await getUserAccount(oldId);
     console.log(`oldData: ${JSON.stringify(oldUserAccount)}`)
 
     // write new userAccount data
@@ -174,9 +174,9 @@ const handleYesNoType = async (who, response) => {
     // fetch the original request
     const floatingRequestFound = await findFloatingRequest(who)
     if (floatingRequestFound) {
-        const originalRequest = getUserRequestById(floatingRequestFound.id);
-        const foundUserAccountIdMapping = getAccountIdMapping(who)
-        const foundHuman = getUserAccount(foundUserAccountIdMapping['id']);
+        const originalRequest = await getUserRequestById(floatingRequestFound.id);
+        const foundUserAccountIdMapping = await getAccountIdMapping(who)
+        const foundHuman = await getUserAccount(foundUserAccountIdMapping['id']);
         // send sms to requester
         await sendSms(
             originalRequest['phone'],
@@ -245,7 +245,7 @@ const handleTransactionVerification = async (from, message) => {
     if (message.split(' ').length === 2) {
         const txnId =  message.split(' ')[0]
         const userOtp =  message.split(' ')[1]
-        const txn = getTxn(txnId);
+        const txn = await getTxn(txnId);
         if (txn) {
             const cachedOtp = await getCachedOtpForTxn(txnId);
             // txn verified
@@ -344,6 +344,7 @@ exports.handler = async (event) => {
                 name,
                 location
             )
+            return;
         }
         if (message.startsWith('FIND DEPOSIT')) {
             await handleFindDeposit(
@@ -410,7 +411,7 @@ exports.handler = async (event) => {
             return;
         }
         // handle cash collection
-        if (message.startsWith('RVCDEPOSIT')) {
+        if (message.startsWith('RCVDEPOSIT')) {
             const howMuch = message.replace('RCVDEPOSIT ').split(' ')[0];
             const customer = message.replace('RCVDEPOSIT ').split(' ')[1];
             await handleReceiveDeposit(

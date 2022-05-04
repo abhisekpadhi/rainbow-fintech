@@ -78,9 +78,11 @@ const addNewUserAccountIdMapping = async (phone, newId) => {
 }
 
 const getTxn = async (txnId) => {
+    console.log(`getTxn: ${txnId}`)
     const res = await ddbDocClient.get({
         TableName: constants.txnTable,
-        Key: {txnId}}).promise()
+        Key: {txnId}
+    }).promise()
     if ('Item' in res) {
         return res
     }
@@ -181,6 +183,12 @@ const updateTxnStatusToSuccess = async (txnId) => {
     }
 }
 
+const isTxnIdUniq = async (id) => {
+    const txn = await getTxn(id);
+    console.log(`checking txn uniq, txn: ${JSON.stringify(txn)}`);
+    return txn === null || !('txnId' in txn);
+}
+
 const createTxn = async (firstParty,
                          secondParty,
                          requestType,
@@ -189,7 +197,7 @@ const createTxn = async (firstParty,
                          sendOtpTo) => {
 
     // create new txn & save in db
-    const txnId = generateUniqueId(constants.txnUidSize, (id) => getTxn(id) === null)
+    const txnId = await generateUniqueId(constants.txnUidSize, isTxnIdUniq)
     await addNewTxn({
         'txnId': txnId,
         'firstParty': firstParty,

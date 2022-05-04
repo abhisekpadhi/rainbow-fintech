@@ -33,17 +33,17 @@ const generateId = (size, symbls = constants.symbols) => {
 const generateOtp = () => generateId(constants.otpLen, constants.digits);
 const constructCacheKeyForOtp = (txnId) => `txnOtp:${txnId}`
 
-const generateUniqueId = async (size = constants.txnUidSize, isUniqueCallback) => {
+const generateUniqueId = async (size = constants.txnUidSize, isUniqCbAsync) => {
     let id = generateId(size)
-    if (!await isUniqueCallback(id)) {
+    if (!await isUniqCbAsync(id)) {
         console.log(`generated id ${id} is not unique`);
         id  = generateId(size)
-        let uniq = await isUniqueCallback(id);
+        let uniq = await isUniqCbAsync(id);
         let attempt = 1;
         while (!uniq && attempt <= constants.txnUidRetryAttempts) {
             console.log(`retry generate unique id attempt: ${attempt}`);
             id = generateId()
-            uniq = await isUniqueCallback(id)
+            uniq = await isUniqCbAsync(id)
             attempt++;
         }
         console.log(`failed to generate id after 10 attempts`)
