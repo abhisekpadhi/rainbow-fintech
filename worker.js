@@ -224,10 +224,6 @@ const handleReceiveDeposit = async (agent, howMuch, customer) => {
     )
 }
 
-const handleFloating = (who, howMuch) => {
-    // todo: implement
-}
-
 const handleBucket = async (who, bucketName, howMuch) => {
     await updateBucket(who, bucketName, howMuch);
 }
@@ -239,6 +235,9 @@ const handleGetBucketBalance = async (who, bucketName) => {
     }
 }
 
+const handleFloating = (who, howMuch) => {
+    // todo: implement
+}
 
 const handleTransactionVerification = async (from, message) => {
     if (message.split(' ').length === 2) {
@@ -425,6 +424,15 @@ exports.handler = async (event) => {
             await handleGetBucketBalance(
                 sender.toPhoneNumberDbKey(),
                 message.replace('GET ').split(' ')[0]
+            );
+            return;
+        }
+        // handle bucket balance
+        if (message.startsWith('BUC')) {
+            await handleBucket(
+                sender.toPhoneNumberDbKey(),
+                message.replace('BUC ').split(' ')[0],
+                message.replace('BUC ').split(' ')[1]
             );
             return;
         }
