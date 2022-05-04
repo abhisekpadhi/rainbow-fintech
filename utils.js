@@ -5,7 +5,18 @@ const {
     sqs,
     QueueUrl
 } = require("./clients.js");
-const {twilioSendSms} = require("./sms");
+const {twilioSendSms, gupshupSendSms} = require("./sms");
+
+const constructSms = (var1, var2) => {
+    return (
+        'Dear user,\n' +
+        'You SubNub query result is' + var1 + ' ' + var2 + '. Please do not share this.\n' +
+        '\n' +
+        'Regards,\n' +
+        'SubNub Team '
+    )
+}
+
 
 const random = (min, max) => Math.floor(Math.random() * (max - min)) + min;
 
@@ -57,10 +68,23 @@ Object.assign(String.prototype, {
     }
 });
 
-const sendSms = async (to, message) => {
+const sendSms = async (to, msg) => {
+    let smsService;
+    switch (process.env.SMS_SERVICE) {
+        case 'gupshup':
+            smsService = gupshupSendSms;
+            break;
+        case 'twilio':
+            smsService = twilioSendSms;
+            break;
+        default:
+            smsService = twilioSendSms;
+            break;
+    }
+    const message = constructSms(msg.split(' ')[0], msg.split(' ')[1]);
     try {
         console.log(`sending sms to: ${to} | text: ${message}`);
-        // await twilioSendSms(message, to.toPhoneNumber());
+        // await smsService(message, to.toPhoneNumber());
     } catch (e) {
         console.log(`failed to send sms, err: ${e}`);
     }

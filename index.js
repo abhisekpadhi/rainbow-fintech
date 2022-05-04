@@ -1,6 +1,4 @@
 const { publishMessage } = require("./utils.js");
-const {ddbDocClient} = require("./clients");
-const constants = require("./constants");
 
 // received sms will be in base64 format, mime type of body is multipart/form-data
 exports.handler = async (event) => {

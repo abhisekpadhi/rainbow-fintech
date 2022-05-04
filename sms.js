@@ -5,9 +5,15 @@ const client = require('twilio')(accountSid, authToken)
 const from = process.env.TWILIO_FROM;
 
 //Ex: to:+91876543210
-async function twilioSendSms(body: string, to: string) {
+async function twilioSendSms(body, to) {
     const resp = await client.messages.create({body, from, to});
     console.log(`twilio resp: ${JSON.stringify(resp)}`);
 }
 
-module.exports = { twilioSendSms }
+async function gupshupSendSms(body, to) {
+    console.log(`gupshup not implemented, body: ${body}, to: ${to}`);
+    // const resp = await client.messages.create({body, from, to});
+    // console.log(`twilio resp: ${JSON.stringify(resp)}`);
+}
+
+module.exports = { twilioSendSms, gupshupSendSms }
