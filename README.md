@@ -66,7 +66,7 @@ currentActive
 createdAt
 ```
 
-- table: `userLedger`
+- table: `userAccountLedger`
 ```
 id (pk)
 phone

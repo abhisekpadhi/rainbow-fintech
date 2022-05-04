@@ -5,7 +5,7 @@ module.exports = Object.freeze({
     requestTable: 'userRequest',
     floatingTable: 'floatingCashRequest',
     accountTable: 'userAccount',
-    ledgerTable: 'userLedger',
+    ledgerTable: 'userAccountLedger',
     txnTable: 'userTxn',
     bucketTable: 'userBucket',
     requestType: {

@@ -215,7 +215,7 @@ async function search() {
     console.log(`found: ${JSON.stringify(account)}`);
 }
 
-search().then(process.exit)
+// search().then(process.exit)
 
 
 
