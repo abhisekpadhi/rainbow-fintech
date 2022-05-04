@@ -1,9 +1,7 @@
 const String = require('./utils');
-const {cache} = require('./clients');
 const {randomUUID} = require('crypto');
 const constants = require('./constants');
 const {
-    constructCacheKeyForOtp,
     writeToDb,
     sendSms, deleteReadMessage,
 } = require('./utils');
@@ -21,7 +19,11 @@ const {
     getUserRequestById,
     updateTxnStatusToSuccess,
     createTxn,
-    addLedgerEntry, getUserAccountByPhone, updateBucket, getBucket, getBucketBalance
+    addLedgerEntry,
+    getUserAccountByPhone,
+    updateBucket,
+    getBucketBalance,
+    getCachedOtpForTxn
 } = require("./dal");
 
 const handleRegisterNewAccount = async (phone, pan, name, location) => {
@@ -245,8 +247,7 @@ const handleTransactionVerification = async (from, message) => {
         const userOtp =  message.split(' ')[1]
         const txn = getTxn(txnId);
         if (txn) {
-            const key = constructCacheKeyForOtp(txnId);
-            const cachedOtp = await cache.get(key)
+            const cachedOtp = await getCachedOtpForTxn(txnId);
             // txn verified
             if (cachedOtp === userOtp) {
                 switch (txn.requestType) {

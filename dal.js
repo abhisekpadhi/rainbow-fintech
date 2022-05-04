@@ -256,7 +256,13 @@ const updateBucket = async (phone, bucketName, howMuch) => {
     });
 };
 
+const getCachedOtpForTxn = async (txnId) => {
+    const key = constructCacheKeyForOtp(txnId);
+    return await cache.get(key)
+}
+
 module.exports = {
+    getCachedOtpForTxn,
     getBucketBalance,
     updateBucket,
     getBucket,
