@@ -1,4 +1,5 @@
 const {ddbDocClient, cache} = require('./clients');
+const {randomUUID} = require("crypto");
 const constants = require('./constants');
 const {writeToDb, generateUniqueId, sendSms, generateOtp, constructCacheKeyForOtp} = require('./utils');
 
@@ -225,6 +226,7 @@ const createTxn = async (firstParty,
 
 const addLedgerEntry = async (whose, note, money, op, opening) => {
     const entry = {
+        id: randomUUID(),
         'phone': whose,
         'op': op,
         'note': note,

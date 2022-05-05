@@ -76,12 +76,12 @@ const handleUpdateBalance = async (phone, op, money, note) => {
     await addNewUserAccountRecord({...oldUserAccount, 'balance': balance, id: newId});
     console.log(`new userAccount record added with id ${newId}`);
 
-    // add ledger entry
-    await addLedgerEntry(phone, note, money, op, oldUserAccount['balance']);
-
     // update phone to id mapping
     await updateUserAccountIdMapping(accountMapping['phone'], newId)
     console.log(`accountIdMapping updated for phone ${phone} to ${newId}`);
+
+    // add ledger entry
+    await addLedgerEntry(phone, note, money, op, oldUserAccount['balance']);
 }
 
 const handleFindDeposit = async (whoRequested, howMuch, where) => {
