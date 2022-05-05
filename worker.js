@@ -252,6 +252,7 @@ const handleTransactionVerification = async (from, message) => {
         if (txn) {
             const cachedOtp = await getCachedOtpForTxn(txnId);
             console.log(`cachedOtp: ${cachedOtp}`);
+            console.log(`userOtp: ${userOtp}`);
             // txn verified
             if (cachedOtp === userOtp) {
                 switch (txn.requestType) {
@@ -314,6 +315,7 @@ const handleTransactionVerification = async (from, message) => {
                             `Collected cash, txnId ${txnId}`);
                         break;
                     default:
+                        console.log(`txn requestType ${txn.requestType} cannot be handled`);
                         break;
                 }
 

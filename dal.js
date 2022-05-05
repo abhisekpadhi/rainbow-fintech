@@ -85,7 +85,7 @@ const getTxn = async (txnId) => {
     }).promise()
     console.log(`getTxn for ${txnId}: ${JSON.stringify(res)}`);
     if ('Item' in res) {
-        return res
+        return res['Item']
     }
     return null
 }
@@ -204,7 +204,7 @@ const createTxn = async (firstParty,
         'firstParty': firstParty,
         'secondParty': secondParty,
         'requestType': requestType,
-        'money': howMuch,
+        'money': parseInt(howMuch, 10),
         'status': constants.txnStatus.created,
         'createdAt': Date.now(),
         'currentActive':  true,
