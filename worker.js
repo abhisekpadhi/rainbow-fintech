@@ -426,9 +426,9 @@ exports.handler = async (event) => {
             return;
         }
 
-        if (message.startsWith('PAYMENT')) {
-            const howMuch = message.replace('PAYMENT ', '').split(' ')[0]
-            const customer = message.replace('PAYMENT ', '').split(' ')[1]
+        if (message.startsWith('REQUEST')) {
+            const howMuch = message.replace('REQUEST ', '').split(' ')[0]
+            const customer = message.replace('REQUEST ', '').split(' ')[1]
             await handlePayment(
                 sender.toPhoneNumberDbKey(),
                 howMuch,
@@ -447,7 +447,7 @@ exports.handler = async (event) => {
             );
             return;
         }
-        // account balance as well as bucket balance
+        // account balance as well as bucket balancek
         if (message.startsWith('BALANCE')) {
             await handleSeeBalance(sender);
             return;

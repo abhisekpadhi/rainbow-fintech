@@ -240,7 +240,7 @@ Tests (manual)
 - [ ] ATM Deposit
 - [ ] ATM Withdraw
 - [ ] Pay vendor
-- [ ] Transfer money
+- [x] Transfer money
 - [x] Create & update bucket
 - [x] See account balance
 - [x] See bucket balance
