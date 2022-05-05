@@ -83,6 +83,7 @@ const getTxn = async (txnId) => {
         TableName: constants.txnTable,
         Key: {txnId}
     }).promise()
+    console.log(`getTxn for ${txnId}: ${JSON.stringify(res)}`);
     if ('Item' in res) {
         return res
     }
@@ -213,11 +214,11 @@ const createTxn = async (firstParty,
     await sendSms(sendTxnIdTo.toPhoneNumber(), txnId)
     // generate otp
     const otp = generateOtp()
+    console.log(`otp generated: ${otp}`);
     const key = constructCacheKeyForOtp(txnId)
     // save otp in cache
-    await cache.set(key, otp, {EX: constants.otpExpiryInSeconds}).then(_ => {
-        console.log(`cache set for key ${key}`);
-    });
+    await cache.set(key, otp, {EX: constants.otpExpiryInSeconds});
+    console.log(`otp cache set for key ${key}`);
     // send otp to
     await sendSms(sendOtpTo.toPhoneNumber(), otp)
 }

@@ -51,6 +51,7 @@ const handleRegisterNewAccount = async (phone, pan, name, location) => {
 }
 
 const handleUpdateBalance = async (phone, op, money, note) => {
+    console.log(`update balance for ${phone} ${op} ${money} ${note}`);
     const newId = randomUUID()
 
     // find phone to id mapping
@@ -65,12 +66,12 @@ const handleUpdateBalance = async (phone, op, money, note) => {
     console.log(`oldData: ${JSON.stringify(oldUserAccount)}`)
 
     // write new userAccount data
-    let balance = oldUserAccount['balance']
+    let balance = parseInt(oldUserAccount['balance'], 10)
     if (op === constants.op.credit) {
-        balance += money
+        balance += parseInt(money, 10)
     }
     if (op === constants.op.debit) {
-        balance -= money
+        balance -= parseInt(money)
     }
     await addNewUserAccountRecord({...oldUserAccount, 'balance': balance, id: newId});
     console.log(`new userAccount record added with id ${newId}`);
@@ -216,11 +217,12 @@ const handleSeeBalance = async (phone) => {
 }
 
 const handleReceiveDeposit = async (agent, howMuch, customer) => {
+    console.log(`handleReceiveDeposit for agent ${agent} customer ${customer} money ${howMuch}`)
     await createTxn(
         agent,
         customer,
-        howMuch,
         constants.requestType.collect,
+        howMuch,
         customer.toPhoneNumber(),
         agent.toPhoneNumber(),
     )
@@ -242,12 +244,14 @@ const handleFloating = (who, howMuch) => {
 }
 
 const handleTransactionVerification = async (from, message) => {
+    console.log(`handleTxnVerification, from: ${from} | message: ${message}`);
     if (message.split(' ').length === 2) {
         const txnId =  message.split(' ')[0]
         const userOtp =  message.split(' ')[1]
         const txn = await getTxn(txnId);
         if (txn) {
             const cachedOtp = await getCachedOtpForTxn(txnId);
+            console.log(`cachedOtp: ${cachedOtp}`);
             // txn verified
             if (cachedOtp === userOtp) {
                 switch (txn.requestType) {
@@ -349,30 +353,30 @@ exports.handler = async (event) => {
         if (message.startsWith('FIND DEPOSIT')) {
             await handleFindDeposit(
                 sender.toPhoneNumberDbKey(),
-                message.replace('FIND DEPOSIT ').split(' ')[0],
-                message.replace('FIND DEPOSIT ').split(' ')[1]
+                message.replace('FIND DEPOSIT ', '').split(' ')[0],
+                message.replace('FIND DEPOSIT ', '').split(' ')[1]
             )
             return;
         }
         if (message.startsWith('DEPOSIT')) {
-            const howMuch = message.replace('DEPOSIT ').split(' ')[0]
-            const secondParty = message.replace('DEPOSIT ').split(' ')[1]
+            const howMuch = message.replace('DEPOSIT ', '').split(' ')[0]
+            const secondParty = message.replace('DEPOSIT ', '').split(' ')[1]
             await handleDeposit(sender.toPhoneNumberDbKey(), howMuch, secondParty.toPhoneNumberDbKey())
             return;
         }
         if (message.startsWith('FIND WITHDRAW')) {
             await handleFindWithdraw(
                 sender.toPhoneNumberDbKey(),
-                message.replace('FIND WITHDRAW ').split(' ')[0],
-                message.replace('FIND WITHDRAW ').split(' ')[1]
+                message.replace('FIND WITHDRAW ', '').split(' ')[0],
+                message.replace('FIND WITHDRAW ', '').split(' ')[1]
             )
             return;
         }
         if (message.startsWith('WITHDRAW')) {
             await handleWithdraw(
                 sender.toPhoneNumberDbKey(),
-                message.replace('WITHDRAW ').split(' ')[0],
-                message.replace('WITHDRAW ').split(' ')[1].toPhoneNumberDbKey()
+                message.replace('WITHDRAW ', '').split(' ')[0],
+                message.replace('WITHDRAW ', '').split(' ')[1].toPhoneNumberDbKey()
             )
             return;
         }
@@ -385,8 +389,8 @@ exports.handler = async (event) => {
         }
 
         if (message.startsWith('PAYMENT')) {
-            const howMuch = message.replace('PAYMENT ').split(' ')[0]
-            const customer = message.replace('PAYMENT ').split(' ')[1]
+            const howMuch = message.replace('PAYMENT ', '').split(' ')[0]
+            const customer = message.replace('PAYMENT ', '').split(' ')[1]
             await handlePayment(
                 sender.toPhoneNumberDbKey(),
                 howMuch,
@@ -396,8 +400,8 @@ exports.handler = async (event) => {
         }
 
         if (message.startsWith('TRANSFER')) {
-            const howMuch = message.replace('TRANSFER ').split(' ')[0]
-            const receiver = message.replace('TRANSFER ').split(' ')[1]
+            const howMuch = message.replace('TRANSFER ', '').split(' ')[0]
+            const receiver = message.replace('TRANSFER ', '').split(' ')[1]
             await handleTransfer(
                 sender.toPhoneNumberDbKey(),
                 howMuch,
@@ -412,8 +416,8 @@ exports.handler = async (event) => {
         }
         // handle cash collection
         if (message.startsWith('RCVDEPOSIT')) {
-            const howMuch = message.replace('RCVDEPOSIT ').split(' ')[0];
-            const customer = message.replace('RCVDEPOSIT ').split(' ')[1];
+            const howMuch = message.replace('RCVDEPOSIT ', '').split(' ')[0];
+            const customer = message.replace('RCVDEPOSIT ', '').split(' ')[1];
             await handleReceiveDeposit(
                 sender.toPhoneNumberDbKey(),
                 howMuch,
@@ -425,7 +429,7 @@ exports.handler = async (event) => {
         if (message.startsWith('GET')) {
             await handleGetBucketBalance(
                 sender.toPhoneNumberDbKey(),
-                message.replace('GET ').split(' ')[0]
+                message.replace('GET ', '').split(' ')[0]
             );
             return;
         }
@@ -433,8 +437,8 @@ exports.handler = async (event) => {
         if (message.startsWith('BUC')) {
             await handleBucket(
                 sender.toPhoneNumberDbKey(),
-                message.replace('BUC ').split(' ')[0],
-                message.replace('BUC ').split(' ')[1]
+                message.replace('BUC ', '').split(' ')[0],
+                message.replace('BUC ', '').split(' ')[1]
             );
             return;
         }
