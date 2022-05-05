@@ -363,6 +363,7 @@ const handleTransactionVerification = async (from, message) => {
 // check README.md for event schema - message received from SQS
 exports.handler = async (event) => {
     Object.freeze(event);
+    const prefix = process.env.PREFIX || constants.prefix;
 
     console.log(`received message from sqs: ${JSON.stringify(event)}`)
 
@@ -373,7 +374,8 @@ exports.handler = async (event) => {
     for (const record of event['Records']) {
         const body = JSON.parse(record.body);
         const sender = body['sender'];
-        const message = body['content'].replace('NLLG7 ', '').toUpperCase(); // strip the textlocal sms prefix
+        const message =
+            body['content'].replace(`${prefix} `, '').toUpperCase(); // strip sms prefix
         console.log(`sender: ${sender} | parsed message: ${message}`)
         if (message.startsWith('REGISTER')) {
             const splitted = message.replace('REGISTER ', '').split(' ')

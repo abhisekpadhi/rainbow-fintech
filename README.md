@@ -2,16 +2,20 @@
 An offline & mobile first neo-bank for underserved population.
 
 ## Tech
-- Stack: NodeJS
-- Platform: AWS
+- API: NodeJS
+- IAAS:
     1. Db: AWS Dynamo
     2. Computer: AWS Lambda
     3. Gateway: AWS API Gateway
     4. Cache: AWS Elasticache
     5. Broker: AWS SQS
-- SMS:
-  - Receiving: [textlocal](https://textlocal.in) - +919220592205
-  - Sending: [twilio](https://twilio.com) | [gupshup](https://enterprise.smsgupshup.com)
+- CPAAS:
+  - Receiving: 
+    - [textlocal](https://textlocal.in) +919220592205 `NLLG7` (prefix)
+    - [ifttt (sms → webhook)](https://ifttt.com/android_messages)
+  - Sending: 
+    - [twilio](https://twilio.com)
+    - [gupshup](https://enterprise.smsgupshup.com)
 
 ## Db schema
 - table: `userAccountIdMapping`
@@ -138,7 +142,9 @@ const op = {
 }
 ```
 
-- Message body published to sqs
+- Message body published to sqs 
+  
+*original payload parsed from textlocal*
 ```json
 {
         "sender": "919439831236",
@@ -159,6 +165,15 @@ const op = {
         "custom3": ""
     }
 ```
+
+**Note:** payload actually sent to sqs
+```json
+{ 
+  "sender": "919439831236", 
+  "content": "rain balance"
+}
+```
+
 ## Docs
 - [Dynamodb document client](https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/dynamodb-example-document-client.html)
 - Setup awscli for deploy script `deploy.sh`:

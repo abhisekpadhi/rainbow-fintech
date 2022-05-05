@@ -1,4 +1,5 @@
 module.exports = Object.freeze({
+    prefix: "rain",
     symbols: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz",
     digits: "0123456789",
     userAccountIdMappingTable: 'userAccountIdMapping',
