@@ -233,3 +233,16 @@ AWSLambdaVPCAccessExecutionRole
 ```
 ---
 
+Tests (manual)
+---
+- [x] Register new account
+- [x] Collect cash by agent from customer
+- [ ] ATM Deposit
+- [ ] ATM Withdraw
+- [ ] Pay vendor
+- [ ] Transfer money
+- [ ] Create & update bucket
+- [ ] See account balance
+- [ ] See bucket balance
+- [ ] Find ATM for deposit
+- [ ] Find ATM for withdrawal

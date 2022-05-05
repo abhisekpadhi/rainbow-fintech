@@ -69,7 +69,8 @@ Object.assign(String.prototype, {
     }
 });
 
-const sendSms = async (to, msg) => {
+const sendSms = async (to, m) => {
+    const msg = m.toString(); // handles BALANCE request where response is integer
     let smsService;
     switch (process.env.SMS_SERVICE) {
         case 'gupshup':
