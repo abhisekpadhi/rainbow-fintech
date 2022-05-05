@@ -50,6 +50,19 @@ const getUserAccountByPhone = async (phone) => {
     return null
 }
 
+const isDebitPossible = async (phone, howMuch) => {
+    let result = false;
+    const account = await getUserAccountByPhone(phone);
+    if (account) {
+        if ('balance' in account) {
+            if (account.balance >= parseInt(howMuch, 10)) {
+                result = true;
+            }
+        }
+    }
+    return result;
+}
+
 const addNewUserAccountRecord = async (data) => {
     await ddbDocClient.put({
         TableName: constants.accountTable,
@@ -273,6 +286,7 @@ const getCachedOtpForTxn = async (txnId) => {
 }
 
 module.exports = {
+    isDebitPossible,
     getCachedOtpForTxn,
     getBucketBalance,
     updateBucket,

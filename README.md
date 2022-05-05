@@ -242,7 +242,7 @@ Tests (manual)
 - [ ] Pay vendor
 - [ ] Transfer money
 - [ ] Create & update bucket
-- [ ] See account balance
+- [x] See account balance
 - [ ] See bucket balance
 - [ ] Find ATM for deposit
 - [ ] Find ATM for withdrawal

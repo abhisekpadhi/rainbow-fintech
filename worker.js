@@ -23,7 +23,7 @@ const {
     getUserAccountByPhone,
     updateBucket,
     getBucketBalance,
-    getCachedOtpForTxn
+    getCachedOtpForTxn, isDebitPossible
 } = require("./dal");
 
 const handleRegisterNewAccount = async (phone, pan, name, location) => {
@@ -229,7 +229,20 @@ const handleReceiveDeposit = async (agent, howMuch, customer) => {
 }
 
 const handleBucket = async (who, bucketName, howMuch) => {
-    await updateBucket(who, bucketName, howMuch);
+    console.log(`handleBucket phone: ${who} | bucketName: ${bucketName} | howMuch: ${howMuch}`);
+    const account = await getUserAccountByPhone(who);
+    const possible = await isDebitPossible(who, howMuch);
+    if (possible) {
+        await updateBucket(who, bucketName, howMuch);
+        await handleUpdateBalance(
+            who,
+            constants.op.debit,
+            howMuch,
+            `Bucket ${bucketName} update`
+        );
+    } else {
+        console.log(`insufficient balance to update bucket ${bucketName}, requested ${howMuch} but balance ${account.balance}`);
+    }
 }
 
 const handleGetBucketBalance = async (who, bucketName) => {
