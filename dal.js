@@ -189,9 +189,12 @@ const updateTxnStatusToSuccess = async (txnId) => {
         await ddbDocClient.update({
             TableName: constants.txnTable,
             Key: {txnId},
-            UpdateExpression: "set status = :status",
+            UpdateExpression: "set #txnStatus = :status",
             ExpressionAttributeValues: {
                 ':status': constants.txnStatus.success
+            },
+            ExpressionAttributeNames: {
+                '#txnStatus': 'status'
             }
         }).promise()
         console.log(`txn ${txnId} status updated to success`)
