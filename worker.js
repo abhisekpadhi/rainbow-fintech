@@ -373,7 +373,7 @@ exports.handler = async (event) => {
     for (const record of event['Records']) {
         const body = JSON.parse(record.body);
         const sender = body['sender'];
-        const message = body['content'].replace('NLLG7 ', ''); // strip the textlocal sms prefix
+        const message = body['content'].replace('NLLG7 ', '').toUpperCase(); // strip the textlocal sms prefix
         console.log(`sender: ${sender} | parsed message: ${message}`)
         if (message.startsWith('REGISTER')) {
             const splitted = message.replace('REGISTER ', '').split(' ')

@@ -4,11 +4,11 @@ An offline & mobile first neo-bank for underserved population.
 ## Tech
 - Stack: NodeJS
 - Platform: AWS
-    - Database: Dynamo
-    - Compute: Lambda
-    - Gateway: API GW
-    - Cache: Elasticache
-    - Broker: SQS
+    1. Db: AWS Dynamo
+    2. Computer: AWS Lambda
+    3. Gateway: AWS API Gateway
+    4. Cache: AWS Elasticache
+    5. Broker: AWS SQS
 - SMS:
   - Receiving: [textlocal](https://textlocal.in) - +919220592205
   - Sending: [twilio](https://twilio.com) | [gupshup](https://enterprise.smsgupshup.com)
@@ -233,7 +233,7 @@ AWSLambdaVPCAccessExecutionRole
 ```
 ---
 
-Tests (manual)
+Tests checklist (manual)
 ---
 - [x] Register new account
 - [x] Collect cash by agent from customer
