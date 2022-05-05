@@ -115,14 +115,19 @@ const handleDeposit = async (firstParty, howMuch, secondParty) => {
     console.log(`handleDeposit for ${firstParty} Rs.${howMuch} with ${secondParty}`);
     // optional todo: verification if requested user for deposit was same returned in find result
     // create new txn & save in db
-    await createTxn(
-        firstParty,
-        secondParty,
-        constants.requestType.deposit,
-        howMuch,
-        firstParty.toPhoneNumber(),
-        secondParty.toPhoneNumber(),
-    )
+    const isPossible = await isDebitPossible(secondParty, howMuch)
+    if (isPossible) {
+        await createTxn(
+            firstParty,
+            secondParty,
+            constants.requestType.deposit,
+            howMuch,
+            firstParty.toPhoneNumber(),
+            secondParty.toPhoneNumber(),
+        )
+    } else {
+        console.log(`insufficient balance of secondParty ${secondParty}, deposit requested ${howMuch}`);
+    }
 }
 
 const handleFindWithdraw = async (whoRequested, howMuch, where) => {
@@ -154,14 +159,20 @@ const handleFindWithdraw = async (whoRequested, howMuch, where) => {
 }
 
 const handleWithdraw = async (firstParty, howMuch, secondParty) => {
-    await createTxn(
-        firstParty,
-        secondParty,
-        constants.requestType.withdraw,
-        howMuch,
-        secondParty.toPhoneNumber(),
-        firstParty.toPhoneNumber(),
-    )
+    console.log(`handleWithdraw for ${firstParty} Rs.${howMuch} with ${secondParty}`);
+    const isPossible = await isDebitPossible(firstParty, howMuch);
+    if (isPossible) {
+        await createTxn(
+            firstParty,
+            secondParty,
+            constants.requestType.withdraw,
+            howMuch,
+            secondParty.toPhoneNumber(),
+            firstParty.toPhoneNumber(),
+        )
+    } else {
+        console.log(`insufficient balance for withdraw for firstParty ${firstParty}, requested: ${howMuch}`)
+    }
 }
 
 
@@ -187,25 +198,38 @@ const handleYesNoType = async (who, response) => {
 }
 
 const handlePayment = async (seller, howMuch, buyer) => {
-    await createTxn(
-        seller,
-        buyer,
-        constants.requestType.pay,
-        howMuch,
-        buyer.toPhoneNumber(),
-        seller.toPhoneNumber(),
-    )
+    console.log(`handlePayment buyer: ${buyer} | seller: ${seller} | howMuch: ${howMuch}`);
+    const possible = await isDebitPossible(buyer, howMuch);
+    if (possible) {
+        await createTxn(
+            seller,
+            buyer,
+            constants.requestType.pay,
+            howMuch,
+            buyer.toPhoneNumber(),
+            seller.toPhoneNumber(),
+        )
+    } else {
+        console.log(`insufficient balance to pay from ${buyer}, requested ${howMuch}`);
+    }
+
 }
 
 const handleTransfer = async (sender, howMuch, receiver) => {
-    await createTxn(
-        sender,
-        receiver,
-        constants.requestType.transfer,
-        howMuch,
-        sender.toPhoneNumber(),
-        receiver.toPhoneNumber(),
-    )
+    console.log(`handleTransfer sender: ${sender} | receiver: ${receiver} | howMuch: ${howMuch}`);
+    const possible = await isDebitPossible(sender, howMuch);
+    if (possible) {
+        await createTxn(
+            sender,
+            receiver,
+            constants.requestType.transfer,
+            howMuch,
+            sender.toPhoneNumber(),
+            receiver.toPhoneNumber(),
+        )
+    } else {
+        console.log(`insufficient balance to transfer from ${sender}, requested ${howMuch}`);
+    }
 }
 
 const handleSeeBalance = async (phone) => {
@@ -216,8 +240,8 @@ const handleSeeBalance = async (phone) => {
     }
 }
 
-const handleReceiveDeposit = async (agent, howMuch, customer) => {
-    console.log(`handleReceiveDeposit for agent ${agent} customer ${customer} money ${howMuch}`)
+const handleCollect = async (agent, howMuch, customer) => {
+    console.log(`handleCollect for agent ${agent} customer ${customer} money ${howMuch}`)
     await createTxn(
         agent,
         customer,
@@ -230,7 +254,6 @@ const handleReceiveDeposit = async (agent, howMuch, customer) => {
 
 const handleBucket = async (who, bucketName, howMuch) => {
     console.log(`handleBucket phone: ${who} | bucketName: ${bucketName} | howMuch: ${howMuch}`);
-    const account = await getUserAccountByPhone(who);
     const possible = await isDebitPossible(who, howMuch);
     if (possible) {
         await updateBucket(who, bucketName, howMuch);
@@ -241,7 +264,7 @@ const handleBucket = async (who, bucketName, howMuch) => {
             `Bucket ${bucketName} update`
         );
     } else {
-        console.log(`insufficient balance to update bucket ${bucketName}, requested ${howMuch} but balance ${account.balance}`);
+        console.log(`insufficient balance to update bucket ${bucketName}, requested ${howMuch}`);
     }
 }
 
@@ -433,7 +456,7 @@ exports.handler = async (event) => {
         if (message.startsWith('RCVDEPOSIT')) {
             const howMuch = message.replace('RCVDEPOSIT ', '').split(' ')[0];
             const customer = message.replace('RCVDEPOSIT ', '').split(' ')[1];
-            await handleReceiveDeposit(
+            await handleCollect(
                 sender.toPhoneNumberDbKey(),
                 howMuch,
                 customer.toPhoneNumberDbKey()
