@@ -276,7 +276,7 @@ const updateBucket = async (phone, bucketName, howMuch) => {
     const existing = await getBucket(constructUserBucketKey(phone, bucketName))
     await writeToDb(constants.bucketTable, {
         phoneWithBucketName: constructUserBucketKey(phone, bucketName),
-        balance: existing ? existing.balance + howMuch : howMuch
+        balance: existing ? parseInt(existing.balance) + parseInt(howMuch) : parseInt(howMuch)
     });
 };
 
