@@ -20,5 +20,6 @@ const ddbDocClient = new AWS.DynamoDB.DocumentClient();
 const cache = createClient({url: process.env.REDIS_ENDPOINT});
 cache.connect().then(_ => { console.log(`cache connected`)});
 const QueueUrl = process.env.QUEUE_URL;
+const SmsSendQUrl = process.env.SMS_SEND_Q_URL;
 
-module.exports = {sqs, ddbDocClient, cache, QueueUrl}
+module.exports = {sqs, ddbDocClient, cache, QueueUrl, SmsSendQUrl}

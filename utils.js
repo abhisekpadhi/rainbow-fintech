@@ -3,21 +3,51 @@ const {randomUUID} = require("crypto");
 const {
     ddbDocClient,
     sqs,
-    QueueUrl
-} = require("./clients.js");
-const {twilioSendSms, gupshupSendSms, pushbulletSendSms} = require("./sms");
+    QueueUrl,
+    SmsSendQUrl
+} = require("./clients");
+const {
+    // twilioSendSms,
+    // gupshupSendSms,
+    pushbulletSendSms
+} = require("./sms");
 
 // this template is DLT registered (consider immutable)
 const constructSms = (var1, var2) => {
     return (
         'Dear user,\n' +
-        'You SubNub query result is ' + var1 + ' ' + (var2 ? var2 : '') + '. Please do not share this.\n' +
+        'You Rainbow query result is ' + var1 + ' ' + (var2 ? var2 : '') + '. Please do not share this.\n' +
         '\n' +
         'Regards,\n' +
-        'SubNub Team '
+        'Rainbow Team '
     )
 }
 
+const handleSmsSendingTask = async (receiver, content) => {
+    let smsService;
+    switch (process.env.SMS_SERVICE) {
+        // case 'gupshup':
+        //     smsService = gupshupSendSms;
+        //     break;
+        // case 'twilio':
+        //     smsService = twilioSendSms;
+        //     break;
+        // case 'pushbullet':
+        //     smsService = pushbulletSendSms;
+        //     break;
+        default:
+            smsService = pushbulletSendSms;
+            break;
+    }
+    // const message = constructSms(msg.split(' ')[0], msg.split(' ')[1]);
+    try {
+        console.log(`sending sms to: ${receiver} | text: ${content}`);
+        await smsService(content, receiver.toPhoneNumber());
+    } catch (e) {
+        console.log(`failed to send sms, err: ${e}`);
+    }
+
+}
 
 const random = (min, max) => Math.floor(Math.random() * (max - min)) + min;
 
@@ -69,31 +99,9 @@ Object.assign(String.prototype, {
     }
 });
 
-const sendSms = async (to, m) => {
-    const msg = m.toString(); // handles BALANCE request where response is integer
-    let smsService;
-    switch (process.env.SMS_SERVICE) {
-        case 'gupshup':
-            smsService = gupshupSendSms;
-            break;
-        case 'twilio':
-            smsService = twilioSendSms;
-            break;
-        case 'pushbullet':
-            smsService = pushbulletSendSms;
-            break;
-        default:
-            smsService = twilioSendSms;
-            break;
-    }
-    const message = constructSms(msg.split(' ')[0], msg.split(' ')[1]);
-    try {
-        console.log(`sending sms to: ${to} | text: ${message}`);
-        await smsService(message, to.toPhoneNumber());
-    } catch (e) {
-        console.log(`failed to send sms, err: ${e}`);
-    }
-
+const sendSms = async (receiver, m) => {
+    const content = m.toString(); // handles BALANCE request where content is number
+    await publishSmsSendingTaskMessage({receiver, content});
 }
 
 const deleteReadMessage = async (records) => {
@@ -108,7 +116,18 @@ const publishMessage = async (MessageBody) => {
         MessageDeduplicationId: randomUUID(),  // Required for FIFO queues
         MessageGroupId: "Group1",  // Required for FIFO queues
         MessageBody, // string
-        QueueUrl
+        QueueUrl,
+    }).promise()
+    console.log(`SQS message sent, id: ${r.MessageId}`);
+}
+
+const publishSmsSendingTaskMessage = async (MessageBody) => {
+    console.log(`will publish smsSendingTask message: ${MessageBody} to queue ${QueueUrl}`);
+    const r = await sqs.sendMessage({
+        MessageDeduplicationId: randomUUID(),  // Required for FIFO queues
+        MessageGroupId: "Group1",  // Required for FIFO queues
+        MessageBody, // string
+        QueueUrl: SmsSendQUrl,
     }).promise()
     console.log(`SQS message sent, id: ${r.MessageId}`);
 }
@@ -120,6 +139,7 @@ module.exports = {
     constructCacheKeyForOtp,
     generateUniqueId,
     writeToDb,
+    handleSmsSendingTask,
     sendSms,
     deleteReadMessage,
     publishMessage

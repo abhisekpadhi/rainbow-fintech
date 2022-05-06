@@ -2,6 +2,8 @@ const AWS = require('aws-sdk');
 const { randomUUID } = require('crypto');
 const { createClient } = require('redis');
 const constants = require('./constants');
+const fetch = require('node-fetch')
+const axios = require('axios');
 
 AWS.config.update({region: 'ap-south-1', credentials: {accessKeyId: 'AKIAXYDVU3NFEEK6ET52', secretAccessKey: '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'}});
 const test = new AWS.DynamoDB({apiVersion: '2012-08-10'});
@@ -135,7 +137,6 @@ async function sendSms() {
     console.log(body);
 }
 
-const fetch = require('node-fetch');
 
 async function vonSend() {
     const from = "Vonage APIs"
@@ -217,7 +218,6 @@ async function search() {
 
 // search().then(process.exit)
 
-
 const sendSmsViaPb = async () => {
     const url = 'https://api.pushbullet.com/v2/texts';
     const headers = {'Access-Token': 'o.MwfXtsZAMNINPg4ZKa8JJW2KBCndKdpx', 'Content-Type': 'application/json'};
@@ -238,8 +238,32 @@ const sendSmsViaPb = async () => {
     }
     const resp = await fetch(url, params);
     const result = await resp.json();
-    console.log(`result: ${JSON.stringify(result)}`);
+    console.log(`result: ${JSON.stringify(result)}`);t
 }
+
+const https = require('https');
+
+async function testApiCall() {
+    // const resp = await fetch('https://pokeapi.co/api/v2/pokemon/ditto', {
+    //     method: 'GET'
+    // });
+    // const res = await resp.json();
+    // console.log(res);
+    const resp = await https.request({
+        host: 'pokeapi.co',
+        port: 443,
+        path: '/api/v2/pokemon/ditto',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+
+    console.log(resp);
+}
+
+
+testApiCall().then(process.exit);
 
 // sendSmsViaPb().then(process.exit);
 
