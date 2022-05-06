@@ -262,8 +262,8 @@ Tests checklist (manual)
 ---
 - [x] Register new account
 - [x] Collect cash by agent from customer
-- [ ] ATM Deposit
-- [ ] ATM Withdraw
+- [x] ATM Deposit
+- [x] ATM Withdraw
 - [x] Pay vendor
 - [x] Transfer money
 - [x] Create & update bucket

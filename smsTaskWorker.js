@@ -12,7 +12,7 @@ exports.handler = async (event) => {
         const payload = JSON.parse(record.body);
         const {receiver, content} = payload;
         console.log(`will send sms: ${JSON.stringify(payload)}`);
-        // await handleSmsSendingTask(receiver, content)
+        await handleSmsSendingTask(receiver, content)
     }
 
     return {

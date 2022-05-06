@@ -37,7 +37,7 @@ const handleRegisterNewAccount = async (phone, pan, name, location) => {
             'name': name,
             'loc': location,
             'pan': pan,
-            'verification': 'soft',
+            'verification': 'hard',
             'balance': 0,
             'currentActive': true,
             'createdAt': Date.now(),
@@ -82,6 +82,9 @@ const handleUpdateBalance = async (phone, op, money, note) => {
 
     // add ledger entry
     await addLedgerEntry(phone, note, money, op, oldUserAccount['balance']);
+
+    const msg = `${op}ed ₹${money}`
+    await sendSms(phone, msg);
 }
 
 const handleFindDeposit = async (whoRequested, howMuch, where) => {
@@ -127,6 +130,7 @@ const handleDeposit = async (firstParty, howMuch, secondParty) => {
         )
     } else {
         console.log(`insufficient balance of secondParty ${secondParty}, deposit requested ${howMuch}`);
+        await sendSms(firstParty, 'NOT POSSIBLE');
     }
 }
 
@@ -172,27 +176,28 @@ const handleWithdraw = async (firstParty, howMuch, secondParty) => {
         )
     } else {
         console.log(`insufficient balance for withdraw for firstParty ${firstParty}, requested: ${howMuch}`)
+        await sendSms(firstParty, 'NOT POSSIBLE');
     }
 }
 
 
 
 // answer to floating cash
-const handleYesNoType = async (who, response) => {
+const handleYesNoType = async (responderPhone, response) => {
     if (response.toUpperCase() === 'YES') {
         // optional todo: if response is NO call retry find withdraw process
         return
     }
     // fetch the original request
-    const floatingRequestFound = await findFloatingRequest(who)
+    const floatingRequestFound = await findFloatingRequest(responderPhone)
     if (floatingRequestFound) {
         const originalRequest = await getUserRequestById(floatingRequestFound.id);
-        const foundUserAccountIdMapping = await getAccountIdMapping(who)
+        const foundUserAccountIdMapping = await getAccountIdMapping(responderPhone)
         const foundHuman = await getUserAccount(foundUserAccountIdMapping['id']);
         // send sms to requester
         await sendSms(
             originalRequest['phone'],
-            `${foundHuman['name']} ${who}`
+            `${foundHuman['name']} ${responderPhone}`
         )
     }
 }
@@ -212,7 +217,6 @@ const handlePayment = async (seller, howMuch, buyer) => {
     } else {
         console.log(`insufficient balance to pay from ${buyer}, requested ${howMuch}`);
     }
-
 }
 
 const handleTransfer = async (sender, howMuch, receiver) => {
@@ -229,6 +233,7 @@ const handleTransfer = async (sender, howMuch, receiver) => {
         )
     } else {
         console.log(`insufficient balance to transfer from ${sender}, requested ${howMuch}`);
+        await sendSms(sender, 'NOT POSSIBLE');
     }
 }
 
@@ -263,8 +268,10 @@ const handleBucket = async (who, bucketName, howMuch) => {
             howMuch,
             `Bucket ${bucketName} update`
         );
+        await sendSms(who, 'BUCKET UPDATED');
     } else {
         console.log(`insufficient balance to update bucket ${bucketName}, requested ${howMuch}`);
+        await sendSms(who, 'NOT POSSIBLE');
     }
 }
 
