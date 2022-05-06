@@ -218,7 +218,28 @@ async function search() {
 // search().then(process.exit)
 
 
+const sendSmsViaPb = async () => {
+    const url = 'https://api.pushbullet.com/v2/texts';
+    const headers = {'Access-Token': 'o.MwfXtsZAMNINPg4ZKa8JJW2KBCndKdpx', 'Content-Type': 'application/json'};
+    const body = {
+        "data": {
+            "addresses": [
+                "+917760601643"
+            ],
+            "message": "DEBITED Rs.100",
+            "target_device_iden": "ujCOfwTdlJIsjEYlMpWkEK",
+            "guid": randomUUID(),
+        }
+    }
+    const params = {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers,
+    }
+    const resp = await fetch(url, params);
+    const result = await resp.json();
+    console.log(`result: ${JSON.stringify(result)}`);
+}
 
-
-
+// sendSmsViaPb().then(process.exit);
 

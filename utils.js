@@ -5,7 +5,7 @@ const {
     sqs,
     QueueUrl
 } = require("./clients.js");
-const {twilioSendSms, gupshupSendSms} = require("./sms");
+const {twilioSendSms, gupshupSendSms, pushbulletSendSms} = require("./sms");
 
 // this template is DLT registered (consider immutable)
 const constructSms = (var1, var2) => {
@@ -79,6 +79,9 @@ const sendSms = async (to, m) => {
         case 'twilio':
             smsService = twilioSendSms;
             break;
+        case 'pushbullet':
+            smsService = pushbulletSendSms;
+            break;
         default:
             smsService = twilioSendSms;
             break;
@@ -86,7 +89,7 @@ const sendSms = async (to, m) => {
     const message = constructSms(msg.split(' ')[0], msg.split(' ')[1]);
     try {
         console.log(`sending sms to: ${to} | text: ${message}`);
-        // await smsService(message, to.toPhoneNumber());
+        await smsService(message, to.toPhoneNumber());
     } catch (e) {
         console.log(`failed to send sms, err: ${e}`);
     }

@@ -2,21 +2,31 @@
 An offline & mobile first neo-bank for underserved population.
 
 ## Tech
-- API: NodeJS
+- Backend: NodeJS
 - IAAS:
-    1. Db: AWS Dynamo
-    2. Computer: AWS Lambda
-    3. Gateway: AWS API Gateway
-    4. Cache: AWS Elasticache
-    5. Broker: AWS SQS
+    1. Db: `AWS Dynamo`
+    2. Compute: `AWS Lambda`
+    3. Gateway: `AWS API Gateway`
+    4. Cache: `AWS Elasticache`
+    5. Broker: `AWS SQS`
 - CPAAS:
-  - Receiving: 
-    - [textlocal](https://textlocal.in) +919220592205 `NLLG7` (prefix)
-    - [ifttt (sms → webhook)](https://ifttt.com/android_messages)
-  - Sending: 
-    - [twilio](https://twilio.com)
-    - [gupshup](https://enterprise.smsgupshup.com)
-
+  - `Expensive`, `difficult`, `scalable` (evaluated, but not used in this project):
+    - Receiving:
+      - [textlocal](https://textlocal.in) +919220592205 `NLLG7` (prefix)
+      - [ifttt (sms → webhook)](https://ifttt.com/android_messages)
+    - Sending:
+      - [twilio](https://twilio.com)
+      - [gupshup](https://enterprise.smsgupshup.com)
+  - `Inexpensive`, `easy`, `very small scale` (used in this project):
+    - Android phone connected to internet, is installed with 2 specific apps, [IFTTT](https://ifttt.com/android_device) & [Pushbullet](https://www.pushbullet.com/)
+    - Users send sms to this phone, an ifttt recipe triggers on incoming sms containing a keyword
+    - Trigger reads sms content and POST's to Webhook which is hosted in AWS
+    - Webhook processes the sms content & calls pushbullet api to send sms via same android phone
+    - Inexpensive, since only sms sending charge as per carrier tariff
+    - No need to dealing with CPAAS service providers
+    - Caveats:
+      - Android phone must be online all the time with IFTTT and Pushbullet running in the background
+  
 ## Db schema
 - table: `userAccountIdMapping`
 ```
