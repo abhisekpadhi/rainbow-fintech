@@ -213,7 +213,7 @@ cd aws-sdk-layer/nodejs
 
 2. Use amazon linux 2 compatible environment to install required packages:
 ```shell
-docker run --entrypoint "" -v "$PWD":/var/task "public.ecr.aws/lambda/nodejs:14" /bin/sh -c "npm install aws-sdk redis node-fetch@2.6.7 twilio; exit"
+docker run --entrypoint "" -v "$PWD":/var/task "public.ecr.aws/lambda/nodejs:14" /bin/sh -c "npm install aws-sdk redis node-fetch@2.6.7; exit"
 ```
 
 3. zip it
