@@ -101,7 +101,7 @@ Object.assign(String.prototype, {
 
 const sendSms = async (receiver, m) => {
     const content = m.toString(); // handles BALANCE request where content is number
-    await publishSmsSendingTaskMessage({receiver, content});
+    await publishSmsSendingTaskMessage(JSON.stringify({receiver, content}));
 }
 
 const deleteReadMessage = async (records) => {
