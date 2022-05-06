@@ -375,7 +375,7 @@ exports.handler = async (event) => {
         const body = JSON.parse(record.body);
         const sender = body['sender'];
         const message =
-            body['content'].replace(`${prefix} `, '').toUpperCase(); // strip sms prefix
+            body['content'].replace(`${prefix} `, ''); // strip sms prefix
         console.log(`sender: ${sender} | parsed message: ${message}`)
         if (message.startsWith('REGISTER')) {
             const splitted = message.replace('REGISTER ', '').split(' ')

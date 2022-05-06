@@ -2,7 +2,7 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID
 const authToken = process.env.TWILIO_AUTH_TOKEN
 const client = require('twilio')(accountSid, authToken)
 const { randomUUID } = require('crypto');
-
+const fetch = require('node-fetch');
 const from = process.env.TWILIO_FROM;
 
 //Ex: to:+91876543210
