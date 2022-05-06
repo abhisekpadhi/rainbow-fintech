@@ -235,7 +235,7 @@ const createTxn = async (firstParty,
     const key = constructCacheKeyForOtp(txnId)
     // save otp in cache
     await cache.set(key, otp, {EX: constants.otpExpiryInSeconds});
-    console.log(`otp cache set for key ${key}`);
+    console.log(`otp ${otp} cache set for key ${key} `);
     // send otp to
     await sendSms(sendOtpTo.toPhoneNumber(), otp)
 }

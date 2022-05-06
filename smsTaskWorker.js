@@ -11,6 +11,12 @@ exports.handler = async (event) => {
     for (const record of event['Records']) {
         const payload = JSON.parse(record.body);
         const {receiver, content} = payload;
-        await handleSmsSendingTask(receiver, content)
+        console.log(`will send sms: ${JSON.stringify(payload)}`);
+        // await handleSmsSendingTask(receiver, content)
     }
+
+    return {
+        statusCode: 200,
+        body: JSON.stringify('ok'),
+    };
 };

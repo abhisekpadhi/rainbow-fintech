@@ -264,7 +264,7 @@ Tests checklist (manual)
 - [x] Collect cash by agent from customer
 - [ ] ATM Deposit
 - [ ] ATM Withdraw
-- [ ] Pay vendor
+- [x] Pay vendor
 - [x] Transfer money
 - [x] Create & update bucket
 - [x] See account balance
