@@ -115,13 +115,13 @@ const findHumanForDeposit = async (requesterPhone, howMuch, location) => {
         TableName: constants.accountTable,
         FilterExpression: "balance >= :balance AND loc = :loc AND phone <> :phone",
         ExpressionAttributeValues: {
-            ":balance": howMuch,
+            ":balance": parseInt(howMuch, 10),
             ":loc": location,
             ":phone": requesterPhone
         }
     }
     let res = await ddbDocClient.scan(params).promise()
-    let account;
+    let account = null;
     if (res.Items.length === 0 && res.LastEvaluatedKey && 'id' in res.LastEvaluatedKey) {
         while (res.Items.length === 0 && res.LastEvaluatedKey && 'id' in res.LastEvaluatedKey) {
             res = await ddbDocClient.scan({...params, ExclusiveStartKey: res.LastEvaluatedKey}).promise()

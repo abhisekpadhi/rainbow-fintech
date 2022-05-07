@@ -106,7 +106,7 @@ const handleFindDeposit = async (whoRequested, howMuch, where) => {
         'requestType': constants.requestType.findDeposit,
         'where': where,
         'money': howMuch,
-        'otherAccount': humanAtmFound.phone,
+        'otherAccount': humanAtmFound ? humanAtmFound.phone : '',
         'status': status,
         'extraInfo': '',
         'currentActive': true,
