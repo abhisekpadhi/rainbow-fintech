@@ -191,10 +191,12 @@ async function twSend() {
 async function search() {
     const params = {
         TableName: 'userAccount',
-        Limit: 1,
-        FilterExpression: "loc = :loc",
+        FilterExpression: "loc = :loc AND balance >= :balance AND phone <> :phone AND currentActive = :currentActive",
         ExpressionAttributeValues: {
-            ':loc': 'HSR'
+            ':loc': 'DELHI',
+            ':balance': 99,
+            ':phone': '917760601643',
+            ':currentActive': true
         }
     }
     let res = await ddbDocClient.scan(params).promise()
@@ -203,7 +205,7 @@ async function search() {
     if (res.Items.length === 0 && res.LastEvaluatedKey && 'id' in res.LastEvaluatedKey) {
         while (res.Items.length === 0 && res.LastEvaluatedKey && 'id' in res.LastEvaluatedKey) {
             res = await ddbDocClient.scan({...params, ExclusiveStartKey: res.LastEvaluatedKey}).promise()
-            console.log(`res: ${JSON.stringify(res)}`)
+            console.log(`res inside loop: ${JSON.stringify(res)}`)
             if (res.Items.length > 0) {
                 account = res.Items[0];
             }
@@ -211,12 +213,14 @@ async function search() {
                 break
             }
         }
+    } else {
+        account = res.Items[0];
     }
 
     console.log(`found: ${JSON.stringify(account)}`);
 }
 
-// search().then(process.exit)
+search().then(process.exit)
 
 const sendSmsViaPb = async () => {
     const url = 'https://api.pushbullet.com/v2/texts';
@@ -240,30 +244,4 @@ const sendSmsViaPb = async () => {
     const result = await resp.json();
     console.log(`result: ${JSON.stringify(result)}`);t
 }
-
-const https = require('https');
-
-async function testApiCall() {
-    // const resp = await fetch('https://pokeapi.co/api/v2/pokemon/ditto', {
-    //     method: 'GET'
-    // });
-    // const res = await resp.json();
-    // console.log(res);
-    const resp = await https.request({
-        host: 'pokeapi.co',
-        port: 443,
-        path: '/api/v2/pokemon/ditto',
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    });
-
-    console.log(resp);
-}
-
-
-testApiCall().then(process.exit);
-
-// sendSmsViaPb().then(process.exit);
 
