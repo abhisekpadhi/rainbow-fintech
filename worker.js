@@ -142,7 +142,7 @@ const handleDeposit = async (firstParty, howMuch, secondParty) => {
 
 const handleFindWithdraw = async (whoRequested, howMuch, where) => {
     // blast out sms to nearby people asking for floating cash
-    const humanAtmFound = await findHumanAtLocation(whoRequested, location)
+    const humanAtmFound = await findHumanAtLocation(whoRequested, where)
     let status = 'requested';
     if (humanAtmFound) {
         await sendSms(humanAtmFound['phone'], `${howMuch} FLOATING?`)

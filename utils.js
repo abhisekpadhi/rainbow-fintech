@@ -122,7 +122,7 @@ const publishMessage = async (MessageBody) => {
 }
 
 const publishSmsSendingTaskMessage = async (MessageBody) => {
-    console.log(`will publish smsSendingTask message: ${MessageBody} to queue ${QueueUrl}`);
+    console.log(`will publish smsSendingTask message: ${MessageBody} to queue ${SmsSendQUrl}`);
     const r = await sqs.sendMessage({
         MessageDeduplicationId: randomUUID(),  // Required for FIFO queues
         MessageGroupId: "Group1",  // Required for FIFO queues

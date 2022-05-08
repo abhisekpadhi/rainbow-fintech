@@ -261,7 +261,7 @@ AWSLambdaVPCAccessExecutionRole
 Tests checklist (manual)
 ---
 - [x] Register new account
-- [x] Collect cash by agent from customer
+- [x] Collect cash from customers using agents 
 - [x] ATM Deposit
 - [x] ATM Withdraw
 - [x] Pay vendor
@@ -269,5 +269,5 @@ Tests checklist (manual)
 - [x] Create & update bucket
 - [x] See account balance
 - [x] See bucket balance
-- [ ] Find ATM for deposit
+- [x] Find ATM for deposit
 - [ ] Find ATM for withdrawal
